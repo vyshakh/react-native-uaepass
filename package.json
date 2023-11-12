@@ -1,6 +1,6 @@
 {
   "name": "react-native-uaepass",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React-native module for UAE Pass",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
