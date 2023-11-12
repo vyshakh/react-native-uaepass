@@ -6,17 +6,15 @@ const LINKING_ERROR =
   '- You rebuilt the app after installing the package\n' +
   '- You are not using Expo Go\n';
 
-const Uaepass = NativeModules.Uaepass
-  ? NativeModules.Uaepass
+const UAEPass = NativeModules.UAEPass
+  ? NativeModules.UAEPass
   : new Proxy(
-      {},
-      {
-        get() {
-          throw new Error(LINKING_ERROR);
-        },
-      }
-    );
+    {},
+    {
+      get() {
+        throw new Error(LINKING_ERROR);
+      },
+    }
+  );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return Uaepass.multiply(a, b);
-}
+export { UAEPass }

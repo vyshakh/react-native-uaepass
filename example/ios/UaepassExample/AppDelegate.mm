@@ -2,6 +2,8 @@
 
 #import <React/RCTBundleURLProvider.h>
 
+#import "UAEPass-Swift.h"
+
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
@@ -21,6 +23,27 @@
 #else
   return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
 #endif
+}
+
+
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options
+{
+//  THIS block of code handles the UAE Pass success or failure redirects(links)
+    UAEPass * obj = [[UAEPass alloc] init];
+    NSString *successHost = [obj getSuccessHost];
+    NSString *failureHost = [obj getFailureHost];
+    if ([url.absoluteString containsString: successHost]) {
+      [obj handleLoginSuccess];
+      return YES;
+    }else if ([url.absoluteString containsString: failureHost]){
+      [obj handleLoginFailure];
+      return NO;
+    }
+  // UAE pass link handler ends here
+  // Other link handler code goes here
+
+  return YES;
+// return [RCTLinkingManager application:application openURL:url options:options];
 }
 
 @end

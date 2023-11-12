@@ -26,6 +26,10 @@ if linkage != nil
 end
 
 target 'UaepassExample' do
+
+    #  UAE pass pod
+  pod 'UAEPassClient', :git => 'https://github.com/vyshakh/react-native-uaepass-utils.git', :branch => 'main'
+
   config = use_native_modules!
 
   # Flags change depending on the env values.
