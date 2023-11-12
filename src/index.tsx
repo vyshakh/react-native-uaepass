@@ -9,12 +9,12 @@ const LINKING_ERROR =
 const UAEPass = NativeModules.UAEPass
   ? NativeModules.UAEPass
   : new Proxy(
-    {},
-    {
-      get() {
-        throw new Error(LINKING_ERROR);
-      },
-    }
-  );
+      {},
+      {
+        get() {
+          throw new Error(LINKING_ERROR);
+        },
+      }
+    );
 
-export { UAEPass }
+export { UAEPass };
