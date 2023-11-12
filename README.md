@@ -36,6 +36,11 @@ pod 'UAEPassClient', :path => '../node_modules/react-native-uaepass/ios/LocalPod
 
 ```
 
+```ruby
+# platform :ios, min_ios_version_supported
+platform :ios, '13.0'
+```
+
 install the pod.
 
 ```sh
