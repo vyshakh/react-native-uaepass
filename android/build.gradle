@@ -81,6 +81,24 @@ dependencies {
   // For < 0.71, this will be from the local maven repo
   // For > 0.71, this will be replaced by `com.facebook.react:react-android:$version` by react gradle plugin
   //noinspection GradleDynamicVersion
+
+  
+  
+    //UAE PASS START -- Enable Dependency Start
+    implementation fileTree(dir: "libs", include: ["*.jar","*.aar"])
+    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+    implementation 'com.squareup.retrofit2:converter-scalars:2.4.0'
+    implementation 'com.google.code.gson:gson:2.8.5'
+
+    implementation 'com.loopj.android:android-async-http:1.4.9'
+    implementation 'net.openid:appauth:0.7.1'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.4.10"
+    //UAE PASS END -- Enable Kotlin Dependency End
+
+
   implementation "com.facebook.react:react-native:+"
 }
 

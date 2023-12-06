@@ -80,6 +80,16 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+
+        // UAEPass
+        manifestPlaceholders = [
+            appAuthRedirectScheme: "com.test",
+            host_success: "uaePassSuccess",
+            host_failure: "uaePassFailure",
+            scheme : "scheme",
+        ]
+        // UAEPass
+
     }
     signingConfigs {
         debug {

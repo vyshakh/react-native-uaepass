@@ -108,9 +108,54 @@ Add below code to <b>AppDelegate.mm </b>
 }
 ```
 
-## Android Setup [Coming soon]
-Android support will be available soon
+## Android Setup
 
+```gradle
+// UAEPass configuration - Use your UAE pass integration settings
+manifestPlaceholders = [
+    appAuthRedirectScheme: "com.test",
+    host_success: "uaePassSuccess",
+    host_failure: "uaePassFailure",
+    scheme : "scheme",
+]
+// UAEPass
+```
+
+Add below lines to AndroidManifest.xml (screenshot below)
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<queries>
+    <package android:name="ae.uaepass.mainapp" />
+    <package android:name="ae.uaepass.mainapp.stg" />
+</queries>
+```
+
+```xml
+<!-- //UAE PASS START Adding Custom Scheme and Host -->
+<activity android:name="com.uaepass.LoginActivity"  android:launchMode="singleTask" android:exported="true"  >
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:host="${host_success}" android:scheme="${scheme}" />
+        <data android:host="${host_failure}" android:scheme="${scheme}" />
+    </intent-filter>
+</activity>
+<!-- //UAE PASS END Adding Custom Scheme and Host -->
+```
+
+```xml
+<!-- //UAE PASS -->
+<intent-filter>
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+</intent-filter>
+<!-- //UAE PASS -->
+```
+
+![alt text](./screenshots/android/manifest.png 'manifest')
 
 ## Screenshots
 
@@ -118,9 +163,9 @@ Android support will be available soon
 
 ![alt text](./screenshots/ios/ios_all.png 'iOS screenshot')
 
-<!-- #### Android
+#### Android
 
-![alt text](./screenshots/android/android_all.png 'Android screenshot') -->
+![alt text](./screenshots/android/android_all.png 'Android screenshot')
 
 ## Usage
 
@@ -234,9 +279,9 @@ Special thanks to the UAE Pass team for providing a secure and convenient nation
 
 #### Author
 
-Hi there! I'm [Vyshakh Parakkat](https://www.linkedin.com/in/vyshakhparakkat/) a passionate mobile developer with a diverse skill set. My expertise lies in crafting robust solutions using React Native, ReactJS, Kubernetes, Fastlane and Python.
+Hi there! I'm [Vyshakh Parakkat](https://www.linkedin.com/in/vyshakhparakkat/). My expertise lies in crafting robust solutions using React Native, ReactJS, Kubernetes, Fastlane and Python.
 
-I hope this project helps you to integrate UAE Pass without hassle. If you have any questions, suggestions, or just want to connect, feel free to reach out.
+I hope this project helps you to integrate UAE Pass without any hassle. If you have any questions, suggestions, or just want to connect, feel free to reach out.
 
 Happy coding! 🚀
 
