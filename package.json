@@ -1,6 +1,6 @@
 {
   "name": "react-native-uaepass",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "React-native module for UAE Pass",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -37,7 +37,8 @@
   "keywords": [
     "react-native",
     "ios",
-    "android"
+    "android",
+    "uaepass"
   ],
   "repository": "https://github.com/vyshakh/react-native-uaepass",
   "author": "Vyshakh Parakkat <parakkat.vyshakh@gmail.com> (https://www.linkedin.com/in/vyshakhparakkat/)",
