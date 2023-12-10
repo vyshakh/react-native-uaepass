@@ -111,7 +111,7 @@ Add below code to <b>AppDelegate.mm </b>
 ## Android Setup
 
 ```gradle
-// UAEPass configuration - Use your UAE pass integration settings
+// Add below code to android/app/build.gradle file and use your UAE pass scheme
 manifestPlaceholders = [
     appAuthRedirectScheme: "com.test",
     host_success: "uaePassSuccess",
@@ -120,6 +120,8 @@ manifestPlaceholders = [
 ]
 // UAEPass
 ```
+![alt text](./screenshots/android/android_build_gradle.png 'gradle')
+
 
 Add below lines to AndroidManifest.xml (screenshot below)
 
