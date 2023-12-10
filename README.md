@@ -17,9 +17,6 @@ Install the library from npm:
 npm install react-native-uaepass
 # --- or ---
 yarn add react-native-uaepass
-
-# --- or from source---
-yarn add file:./../react-native-uaepass_source_folder
 ```
 
 ## iOS Setup
@@ -110,6 +107,16 @@ Add below code to <b>AppDelegate.mm </b>
 
 ## Android Setup
 
+Add below code to android/build.gradle
+```
+allprojects {
+    repositories {
+        flatDir { dirs "$rootDir/../node_modules/react-native-uaepass/android/libs" } 
+    }
+}
+```
+
+
 ```gradle
 // Add below code to android/app/build.gradle file and use your UAE pass scheme
 manifestPlaceholders = [
@@ -120,7 +127,7 @@ manifestPlaceholders = [
 ]
 // UAEPass
 ```
-![alt text](./screenshots/android/android_build_gradle.png 'gradle')
+![alt text](./screenshots/android/android_app_build_gradle.png 'gradle')
 
 
 Add below lines to AndroidManifest.xml (screenshot below)
