@@ -7,7 +7,7 @@ UAE PASS is the first secure national digital identity for citizens, residents a
 Getting Started
 To integrate UAE Pass into your React Native project, please follow the enrollment steps provided on the official UAE Pass website: [UAE Pass](https://uaepass.ae/)
 
-For developers, the UAE Pass developer documentation can be found here: [UAE Pass Developer Documentation](https://uaepass.ae/)
+For developers, the UAE Pass developer documentation can be found here: [UAE Pass Developer Documentation](https://docs.uaepass.ae/)
 
 ## Installation
 
