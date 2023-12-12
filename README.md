@@ -107,16 +107,6 @@ Add below code to <b>AppDelegate.mm </b>
 
 ## Android Setup
 
-Add below code to android/build.gradle
-```
-allprojects {
-    repositories {
-        flatDir { dirs "$rootDir/../node_modules/react-native-uaepass/android/libs" } 
-    }
-}
-```
-
-
 ```gradle
 // Add below code to android/app/build.gradle file and use your UAE pass scheme
 manifestPlaceholders = [
