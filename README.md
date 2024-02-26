@@ -108,6 +108,17 @@ Add below code to <b>AppDelegate.mm </b>
 ## Android Setup
 
 ```gradle
+// Add below code to android/build.gradle file. Paste it above the last line -  "apply plugin..."
+  allprojects {
+      repositories{
+          flatDir{
+            dirs "$rootDir/../node_modules/react-native-uaepass/android/libs"
+          }
+      }
+  }
+```
+
+```gradle
 // Add below code to android/app/build.gradle file and use your UAE pass scheme
 manifestPlaceholders = [
     appAuthRedirectScheme: "com.test",
@@ -117,8 +128,8 @@ manifestPlaceholders = [
 ]
 // UAEPass
 ```
-![alt text](./screenshots/android/android_app_build_gradle.png 'gradle')
 
+![alt text](./screenshots/android/android_app_build_gradle.png 'gradle')
 
 Add below lines to AndroidManifest.xml (screenshot below)
 
@@ -216,9 +227,7 @@ const App = () => {
   return (
     <SafeAreaView style={styles.container}>
       {!userData && (
-        <TouchableOpacity
-          onPress={login}
-        >
+        <TouchableOpacity onPress={login}>
           <Text style={styles.text}>Login</Text>
         </TouchableOpacity>
       )}
@@ -231,7 +240,6 @@ const App = () => {
           )}`}</Text>
           <TouchableOpacity style={styles.button} onPress={logout}>
             <Text style={styles.text}>Logout</Text>
-
           </TouchableOpacity>
         </View>
       )}
@@ -248,7 +256,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
-    color: '#fff'
+    color: '#fff',
   },
   button: {
     marginTop: 50,
@@ -283,7 +291,6 @@ Hi there! I'm [Vyshakh Parakkat](https://www.linkedin.com/in/vyshakhparakkat/). 
 I hope this project helps you to integrate UAE Pass without any hassle. If you have any questions, suggestions, or just want to connect, feel free to reach out.
 
 Happy coding! 🚀
-
 
 #### Disclaimer:
 

@@ -85,7 +85,7 @@ dependencies {
   
   
     //UAE PASS START -- Enable Dependency Start
-    implementation fileTree(dir: "libs", include: ["*.jar","*.aar"])
+    implementation(name:'libraryuaepass', ext:'aar')
     implementation 'com.squareup.retrofit2:retrofit:2.4.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
     implementation 'com.squareup.retrofit2:converter-scalars:2.4.0'

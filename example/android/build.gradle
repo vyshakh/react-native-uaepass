@@ -19,3 +19,13 @@ buildscript {
         classpath("com.facebook.react:react-native-gradle-plugin")
     }
 }
+
+allprojects {
+    repositories{
+        flatDir{
+             // when you install from npm use this below line
+             // dirs "$rootDir/../node_modules/react-native-uaepass/android/libs"
+             dirs "$rootDir/../../android/libs"
+        }
+    }
+}
