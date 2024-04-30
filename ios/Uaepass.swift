@@ -6,6 +6,7 @@
 //
 
 import UAEPassClient
+import WebKit
 
 @objc(UAEPass)
 class UAEPass: NSObject {
