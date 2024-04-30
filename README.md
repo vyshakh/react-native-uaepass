@@ -21,7 +21,7 @@ yarn add react-native-uaepass
 
 ## iOS Setup
 
-UAEPass SDK for iOS requires iOS 13, so make sure that your deployment target is >= 13.0 in your iOS project settings.
+UAEPass SDK for iOS requires iOS 13, so make sure that your deployment target is >= 13.0 in your iOS project settings. (Do not change it, if target is > 13.0)
 
 ![alt text](./screenshots/ios/ios_target.png 'iOS target')
 
@@ -34,7 +34,7 @@ pod 'UAEPassClient', :path => '../node_modules/react-native-uaepass/ios/LocalPod
 ```
 
 ```ruby
-# platform :ios, min_ios_version_supported
+# platform :ios, min_ios_version_supported (Do this change only if your target is < 13.0)
 platform :ios, '13.0'
 ```
 
