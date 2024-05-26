@@ -40,7 +40,10 @@
     "android",
     "uaepass"
   ],
-  "repository": "https://github.com/vyshakh/react-native-uaepass",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vyshakh/react-native-uaepass.git"
+  },
   "author": "Vyshakh Parakkat <parakkat.vyshakh@gmail.com> (https://www.linkedin.com/in/vyshakhparakkat/)",
   "license": "MIT",
   "bugs": {
