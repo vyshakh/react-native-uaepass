@@ -102,7 +102,8 @@ class UAEPass: NSObject {
         }
       }
     }
-    UAEPASSRouter.shared.uaePassToken = nil
+    // this line is crashing, need to check this logic
+    // UAEPASSRouter.shared.uaePassToken = nil
     resolve("success")
   }
   
