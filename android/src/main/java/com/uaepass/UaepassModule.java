@@ -101,14 +101,14 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
     }
 
     private void clearData() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        try{
             CookieManager.getInstance().removeAllCookies(new ValueCallback<Boolean>() {
                 @Override
                 public void onReceiveValue(Boolean value) {
                 }
             });
             CookieManager.getInstance().flush();
-        }
+        } catch (Exception e) {}
     }
 
     @ReactMethod
@@ -124,22 +124,24 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
      */
     @Override
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-        if (requestCode == 5) {
-            if (data == null) {
-                this.promise.reject("Failed to authenticate", "Data intent is null");
-                return;
-            }
+        try{
+            if (requestCode == 5 && this.promise != null) {
+                if (data == null) {
+                    this.promise.reject("Failed to authenticate", "Data intent is null");
+                    return;
+                }
 
-            if (resultCode == Activity.RESULT_OK) {
-                WritableMap map = Arguments.createMap();
-                WritableMap profile = Arguments.createMap();
-                map.putString("accessCode", data.getStringExtra("accessCode"));
-                this.promise.resolve(map);
+                if (resultCode == Activity.RESULT_OK) {
+                    WritableMap map = Arguments.createMap();
+                    WritableMap profile = Arguments.createMap();
+                    map.putString("accessCode", data.getStringExtra("accessCode"));
+                    this.promise.resolve(map);
+                }
+                if (resultCode == Activity.RESULT_CANCELED) {
+                    this.promise.reject(data.getStringExtra("error"));
+                }
             }
-            if (resultCode == Activity.RESULT_CANCELED) {
-                this.promise.reject(data.getStringExtra("error"));
-            }
-        }
+        } catch (Exception e) {}
     }
 
 }
