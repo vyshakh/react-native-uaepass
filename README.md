@@ -108,6 +108,11 @@ Add below code to <b>AppDelegate.mm </b>
 ## Android Setup
 
 ```gradle
+// Add below line to android/gradle.properties
+android.useAndroidX=true
+android.enableJetifier=true
+```
+```gradle
 // Add below code to android/build.gradle file. Paste it above the last line -  "apply plugin..."
   allprojects {
       repositories{
