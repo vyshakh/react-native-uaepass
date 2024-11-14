@@ -42,6 +42,19 @@ import Foundation
         error = try values.decodeIfPresent(String.self, forKey: .error)
         errorDescription = try values.decodeIfPresent(String.self, forKey: .errorDescription)
     }
+    
+    public override init() {
+        scope = ""
+        refresh_token = ""
+        tokenType = ""
+        accessToken = ""
+        expiresIn = 0
+        expiryTime += expiresIn ?? 0.0
+        idToken = ""
+        error = ""
+        errorDescription = ""
+    }
+
     func isTokenValid() -> Bool {
         return Date().timeIntervalSince1970 < (expiryTime - 60)
     }

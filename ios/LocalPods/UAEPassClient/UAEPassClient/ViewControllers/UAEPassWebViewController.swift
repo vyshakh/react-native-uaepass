@@ -24,6 +24,7 @@ import WebKit
     public var isSigning: Bool? = false
     public var skipDismiss = false
     public var alreadyCanceled = false
+    
     public override func viewDidLoad() {
         self.title = "UAE PASS"
         contentMode.preferredContentMode = .mobile
@@ -32,9 +33,14 @@ import WebKit
     
     let contentMode = WKWebpagePreferences.init()
 
-    public func reloadwithURL(url: String) {
+    @objc public func reloadwithURL(url: String) {
         webView = UAEPASSRouter.shared.webView
         webView?.navigationDelegate = self
+        webView?.scrollView.isScrollEnabled = false
+        webView?.scrollView.showsHorizontalScrollIndicator = false
+        webView?.scrollView.showsVerticalScrollIndicator = false
+        webView?.scrollView.delegate = self
+        webView?.configuration.userContentController.addUserScript(getZoomDisableScript())
         webView?.frame = self.view.frame
         if let webView = webView {
             _ = view.addSubviewStretched(subview: webView)
@@ -126,7 +132,6 @@ import WebKit
             if let url = navigationAction.request.mainDocumentURL {
                 decisionHandler(.allow, contentMode)
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                decisionHandler(.cancel, contentMode)
             } else {
                 decisionHandler(.allow, contentMode)
             }
@@ -152,6 +157,14 @@ import WebKit
             onUAEPassFailureBlock?("cancel")
         }
     }
+    
+    private func getZoomDisableScript() -> WKUserScript {
+        let source: String = "var meta = document.createElement('meta');" +
+            "meta.name = 'viewport';" +
+            "meta.content = 'width=device-width, initial-scale=1.0, maximum- scale=1.0, user-scalable=no';" +
+            "var head = document.getElementsByTagName('head')[0];" + "head.appendChild(meta);"
+        return WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+    }
 }
 
 // MARK: - ConfigrationInstanceProtocol
@@ -164,6 +177,13 @@ extension UAEPassWebViewController: ConfigrationInstanceProtocol {
     }
 }
 
+extension UAEPassWebViewController: UIScrollViewDelegate {
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        if scrollView.contentOffset.x > 0 {
+            scrollView.contentOffset = CGPoint(x: 0, y:scrollView.contentOffset.y)
+        }
+    }
+}
 
 public extension UIView {
     typealias ConstraintsTupleStretched = (top:NSLayoutConstraint, bottom:NSLayoutConstraint, leading:NSLayoutConstraint, trailing:NSLayoutConstraint)
@@ -212,5 +232,4 @@ public extension UIView {
         addConstraint(constraintBottom)
         return (constraintTop, constraintBottom, constraintLeading, constraintTrailing)
     }
-
 }

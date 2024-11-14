@@ -41,6 +41,7 @@ public enum UAEPAssParams: String {
 }
 
 @objc public enum UAEPassServiceType: Int {
+    case faceAuthLoginURL
     case loginURL
     case userProfileURL
     case token
@@ -58,6 +59,7 @@ public enum UAEPAssParams: String {
         case .downloadFile: return "GET"
         case .deleteFile: return "DELETE"
         case .loginURL: return nil
+        case .faceAuthLoginURL: return nil
         }
     }
     
@@ -70,6 +72,7 @@ public enum UAEPAssParams: String {
         case .downloadFile: return nil
         case .deleteFile: return nil
         case .loginURL: return nil
+        case .faceAuthLoginURL: return nil
         }
     }
     
@@ -77,6 +80,7 @@ public enum UAEPAssParams: String {
 @objc public class UAEPassConfiguration: NSObject {
     @objc public static func getServiceUrlForType(serviceType: UAEPassServiceType) -> String {
         let txBaseURL = UAEPASSRouter.shared.environmentConfig.txBaseURL
+        let locale = UAEPASSRouter.shared.sdkLang.value()
         switch serviceType {
         case .loginURL:
             var serviceUrl = UAEPASSRouter.shared.environmentConfig.authURL
@@ -94,17 +98,20 @@ public enum UAEPAssParams: String {
             } else {
                 serviceUrl += "&acr_values=" + UAEPAssParams.acrValuesWebView.get()
             }
+            serviceUrl += "&ui_locales=\(locale)"
             return serviceUrl
+        case .faceAuthLoginURL:
+            return UAEPassConfiguration.getServiceUrlForType(serviceType: .loginURL) + "&verificationType=face"
         case .token:
-            return UAEPASSRouter.shared.environmentConfig.tokenURL
+            return UAEPASSRouter.shared.environmentConfig.tokenURL + "?ui_locales=\(locale)"
         case .tokenTX:
-            return UAEPASSRouter.shared.environmentConfig.txTokenURL
+            return UAEPASSRouter.shared.environmentConfig.txTokenURL + "?ui_locales=\(locale)"
         case .userProfileURL:
-            return UAEPASSRouter.shared.environmentConfig.profileURL
+            return UAEPASSRouter.shared.environmentConfig.profileURL + "?ui_locales=\(locale)"
         case .uploadFile, .deleteFile:
-            return txBaseURL + "trustedx-resources/esignsp/v2/signer_processes"
+            return txBaseURL + "trustedx-resources/esignsp/v2/signer_processes" + "?ui_locales=\(locale)"
         case .downloadFile:
-            return txBaseURL + "trustedx-resources/esignsp/v2/documents/"
+            return txBaseURL + "trustedx-resources/esignsp/v2/documents/" + "?ui_locales=\(locale)"
         }
     }
 }

@@ -78,6 +78,11 @@ class UAEPass: NSObject {
         UAEPass.scheme = params["scheme"]
         UAEPass.scope = params["scope"]
 
+        UAEPass.locale = "en"
+        if(params["locale"]?.isEmpty == false){
+            UAEPass.locale = params["locale"]
+        }
+
       DispatchQueue.main.async {
         let viewController = UAEPassViewController()
         let topViewController = UIApplication.shared.windows.last { $0.isKeyWindow }?.rootViewController

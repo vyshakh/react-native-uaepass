@@ -7,9 +7,10 @@
 //  Copyright © 2018 Mohammed Gomaa. All rights reserved.
 //
 import UIKit
+import SafariServices
 
-extension UIApplication {
-    class func topViewController(controller: UIViewController? = UIApplication.shared.windows.filter {$0.isKeyWindow}.first?.rootViewController) -> UIViewController? {
+@objc public extension UIApplication {
+    class func topViewController(controller: UIViewController? = UIApplication.shared.keyWindow?.rootViewController) -> UIViewController? {
         if let navigationController = controller as? UINavigationController {
             return topViewController(controller: navigationController.visibleViewController)
         }
@@ -22,5 +23,18 @@ extension UIApplication {
             return topViewController(controller: presented)
         }
         return controller
+    }
+
+    static func showPDFFile(fileURL: URL) {
+        let documentController = UIDocumentInteractionController(url: fileURL)
+        documentController.delegate = topViewController() as? UIDocumentInteractionControllerDelegate
+        documentController.presentPreview(animated: true)
+    }
+
+    static func showWebview(fileURL: URL) {
+         DispatchQueue.main.async {
+         let safariVC = SFSafariViewController(url: fileURL)
+            topViewController()?.present(safariVC, animated: true, completion: nil)
+        }
     }
 }

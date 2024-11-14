@@ -16,6 +16,7 @@ import UIKit
     var profileURL: String
     var clientID: String
     var clientSecret: String
+    public var env: UAEPASSEnvirnonment
     public var uaePassSchemeURL: String
     /*
     Logout
@@ -25,6 +26,7 @@ import UIKit
     @objc public required init(clientID: String, clientSecret: String, env: UAEPASSEnvirnonment) {
         self.clientID = clientID
         self.clientSecret = clientSecret
+        self.env = env
         switch env {
         case .production:
             uaePassSchemeURL = "uaepass://"

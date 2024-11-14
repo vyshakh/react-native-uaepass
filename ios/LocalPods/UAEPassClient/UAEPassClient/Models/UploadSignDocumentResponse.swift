@@ -13,7 +13,7 @@ public struct UploadSignDocumentResponse: Codable {
     public let selfURL: String?
     public let tasks: Tasks?
     public let documents: [Documents]?
-
+    public var componentValue: String?
     enum CodingKeys: String, CodingKey {
         case processType = "process_type"
         case processID = "id"
