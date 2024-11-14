@@ -21,11 +21,27 @@ extension WKWebViewConfiguration {
     }
 }
 
+@objc public enum SDKLang: Int {
+    case arabic
+    case english
+
+    func value() -> String {
+        switch self {
+        case .arabic: return "ar"
+        case .english: return "en"
+        }
+    }
+}
+
 @objc public class UAEPASSRouter: NSObject {
     
     @objc public static let shared = UAEPASSRouter()
+    @objc public var uaePassFullToken: UAEPassToken!
     @objc public var uaePassToken: String!
     @objc public var webView: WKWebView!
+    @objc public var uaePassWebViewController: UAEPassWebViewController?
+    @objc public var sdkLang: SDKLang = .english
+
     /// private constructor
     public override init() {
         uploadSignDocumentResponse = nil
@@ -33,6 +49,7 @@ extension WKWebViewConfiguration {
         spConfig = SPConfig(redirectUriLogin: "", scope: "", state: "", successSchemeURL: "", failSchemeURL: "")
         webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration.shared)
         uaePassToken = ""
+        uaePassFullToken = UAEPassToken()
     }
     @objc public var environmentConfig: UAEPassConfig
     @objc public var spConfig: SPConfig

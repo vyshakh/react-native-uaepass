@@ -17,6 +17,12 @@ class UAEPassViewController: UIViewController {
                                              successSchemeURL: UAEPass.scheme + "://" + UAEPass.successHost!, //client success url scheme.
                                              failSchemeURL: UAEPass.scheme + "://" + UAEPass.failureHost!, //client failure url scheme.
                                              signingScope: UAEPass.scope!) // client signing scope.
+
+      UAEPASSRouter.shared.sdkLang = .english
+      if(UAEPass.locale == "ar"){
+            UAEPASSRouter.shared.sdkLang = .arabic
+      }
+
       if(UAEPass.env == "production"){
           UAEPASSRouter.shared.environmentConfig = UAEPassConfig(clientID: UAEPass.clientId!, clientSecret: "", env: .production)
       }

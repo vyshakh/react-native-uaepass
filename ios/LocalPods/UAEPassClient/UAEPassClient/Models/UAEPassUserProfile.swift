@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 
 @objc public class UAEPassUserProfile: NSObject, Codable {
     
@@ -21,6 +22,8 @@ import Foundation
     @objc public let firstnameEN: String?
     @objc public let sub: String?
     @objc public let lastnameEN: String?
+    @objc public let firstNameAr: String?
+    @objc public let lastNameAr: String?
     @objc public let email: String?
     @objc public let gender: String?
     @objc public let homeAddressEmirateCode: String?
@@ -47,6 +50,8 @@ import Foundation
         case domain
         case userType
         case firstnameEN//firstnameEN//, first_name
+        case firstNameAr
+        case lastNameAr
         case sub
         case lastnameEN//lastnameEN//, last_name
         case email
@@ -69,6 +74,8 @@ import Foundation
         domain = try values.decodeIfPresent(String.self, forKey: .domain)
         userType = try values.decodeIfPresent(String.self, forKey: .userType)
         firstnameEN = try values.decodeIfPresent(String.self, forKey: .firstnameEN)
+        firstNameAr = try values.decodeIfPresent(String.self, forKey: .firstNameAr)
+        lastNameAr = try values.decodeIfPresent(String.self, forKey: .lastNameAr)
         sub = try values.decodeIfPresent(String.self, forKey: .sub)
         lastnameEN = try values.decodeIfPresent(String.self, forKey: .lastnameEN)
         email = try values.decodeIfPresent(String.self, forKey: .email)

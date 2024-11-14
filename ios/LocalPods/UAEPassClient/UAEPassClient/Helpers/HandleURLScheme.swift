@@ -6,9 +6,12 @@
 //  Copyright © 2018 Mohammed Gomaa. All rights reserved.
 //
 
+import Foundation
 import UIKit
 
 @objc public class HandleURLScheme: NSObject {
+    static let kCustomURLScheme = "uaepass://"
+
     @objc public class func openCustomApp(fullUrl: String) {
         // app will opened successfully
         let customURL = URL(string: fullUrl)!
@@ -43,5 +46,4 @@ import UIKit
             let externalURLScheme = urlSchemes.first as? String else { return "" }
         return "\(externalURLScheme)://uaePassFail"
     }
-    
 }

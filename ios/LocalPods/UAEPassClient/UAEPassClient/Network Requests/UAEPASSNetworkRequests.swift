@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Alamofire
 
 @objc public class UAEPASSNetworkRequests: NSObject {
     
@@ -58,6 +59,7 @@ import Foundation
                             }
                         }
                     } else {
+                        UAEPASSRouter.shared.uaePassFullToken = responseModel
                         UAEPASSRouter.shared.uaePassToken = responseModel.accessToken ?? nil
                         DispatchQueue.main.async {
                             completion(responseModel)
@@ -79,7 +81,7 @@ import Foundation
     }
     
     // MARK: - Get UAE Pass User Profile
-    public func getUAEPassUserProfile(token: String, completion: @escaping (UAEPassUserProfile?) -> Void, onError: @escaping (ServiceErrorType) -> Void) {
+    @objc public func getUAEPassUserProfile(token: String, completion: @escaping (UAEPassUserProfile?) -> Void, onError: @escaping (ServiceErrorType) -> Void) {
         let path: String = UAEPassConfiguration.getServiceUrlForType(serviceType: .userProfileURL)
         guard let url = URL(string: path) else { return }
         var request : URLRequest = URLRequest(url: url)
@@ -133,11 +135,46 @@ import Foundation
                 }
             }
         }
+    
+    public func downloadSignedPdf(pdfID: String, pdfName: String, completion: @escaping (String, Bool) -> Void, onError: @escaping (ServiceErrorType) -> Void) {
+        let downloadUrl: String = "\(UAEPASSRouter.shared.environmentConfig.txBaseURL)trustedx-resources/esignsp/v2/documents/\(pdfID)/content"
+        let documentDirectory = try! FileManager.default
+            .url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            .appendingPathComponent("DSPDFs")
+        let fileUrl = documentDirectory.appendingPathComponent("\(pdfName).pdf")
+        let destination: DownloadRequest.Destination = { _, response in
+            return (fileUrl, [.removePreviousFile, .createIntermediateDirectories])
+        }
         
+        let uaePassSigningToken = UserDefaults.standard.string(forKey: "UAEPassSigningBearer") ?? ""
+        let headers: HTTPHeaders = [
+            "Authorization": "Bearer \(uaePassSigningToken)",
+        ]
+        print(downloadUrl)
+        AF.download(downloadUrl, method: .get, headers: headers, to: destination)
+            .downloadProgress { progress in
+                print("Download progress : \(progress)")
+            }
+            .responseData { response in
+                print("response: \(response)")
+                if response.response?.statusCode == 401 {
+                    onError(.unAuthorizedUAEPass)
+                    return
+                }
+                switch response.result {
+                case .success:
+                    if response.fileURL != nil, let filePath = response.fileURL?.absoluteString {
+                        completion(filePath, true)
+                    }
+                case .failure:
+                    completion("", false)
+                }
+            }
+    }
+    
     public func generateSigningToken(requestData: UAEPassSigningRequest,
                                                  completion: @escaping (String?) -> Void,
                                                  onError: @escaping (ServiceErrorType) -> Void) {
-        
         guard let urlRequest = self.buildUAEPASSSigningRequest(requestData: requestData) else {
             onError(.unknown)
             return
@@ -178,8 +215,111 @@ import Foundation
     
     // MARK: - Uploading the document to UAE Pass -
     
+//    func uploadImage(requestData: UAEPassSigningRequest, pdfName: String, completionHandler: @escaping(UploadSignDocumentResponse?, Bool) -> Void) {
+//
+//        let url = URL(string:UAEPassConfiguration.getServiceUrlForType(serviceType: .uploadFile))
+//        let token = UserDefaults.standard.string(forKey: "UAEPassSigningBearer") ?? ""
+//
+//
+//        let headers: HTTPHeaders = [
+//            "Authorization": "Bearer \(token)",  /*in case you need authorization header */
+//            "Content-type": requestData.serviceType?.getContentType() ?? ""
+//        ]
+//
+//        // generate boundary string using a unique per-app string
+//        let boundary = UUID().uuidString
+//
+//        let session = URLSession.shared
+//
+//        // Set the URLRequest to POST and to the specified URL
+//        var urlRequest = URLRequest(url: url!)
+//        urlRequest.httpMethod = "POST"
+//
+//        // Set Content-Type Header to multipart/form-data, this is equivalent to submitting form data with file upload in a web browser
+//        // And the boundary is also set here
+//        urlRequest.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+//
+//        var data = Data()
+//
+//        if let singingData = requestData.signingData, let documentURL = requestData.documentURL {
+//            let jsonString = String(data: singingData, encoding: .utf8)!
+//            data.append(jsonString.data(using: String.Encoding.utf8)!, withName: "process" as String)
+//            data.append(documentURL, withName: "document")
+//        }
+//
+//        data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+//        data.append("Content-Disposition: form-data; name=\"\(paramName)\"; filename=\"\(pdfName)\"\r\n".data(using: .utf8)!)
+//        data.append("Content-Type: image/png\r\n\r\n".data(using: .utf8)!)
+//        data.append(image.pngData()!)
+//
+//        data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+//
+//        // Send a POST request to the URL, with the data we created earlier
+//        session.uploadTask(with: urlRequest, from: data, completionHandler: { responseData, response, error in
+//            if error == nil {
+//                let jsonData = try? JSONSerialization.jsonObject(with: responseData!, options: .allowFragments)
+//                if let json = jsonData as? [String: Any] {
+//                    print(json)
+//                }
+//            }
+//        }).resume()
+//    }
+
     
-    func buildUAEPASSSigningRequest(requestData: UAEPassSigningRequest) -> URLRequest? {
+    public func uploadDocument(requestData: UAEPassSigningRequest, pdfName: String, completionHandler: @escaping(UploadSignDocumentResponse?, Bool) -> Void) {
+        
+        let url = UAEPassConfiguration.getServiceUrlForType(serviceType: .uploadFile)
+        let token = UserDefaults.standard.string(forKey: "UAEPassSigningBearer") ?? ""
+        
+        
+        let headers: HTTPHeaders = [
+            "Authorization": "Bearer \(token)",  /*in case you need authorization header */
+            "Content-type": requestData.serviceType?.getContentType() ?? ""
+        ]
+        // swiftlint:disable next multiple_closures_with_trailing_closure
+        AF.upload(multipartFormData: { (multipartFormData) in
+            
+            do {
+                if let singingData = requestData.signingData, let documentURL = requestData.documentURL {
+                    let jsonString = String(data: singingData, encoding: .utf8)!
+                    multipartFormData.append(jsonString.data(using: String.Encoding.utf8)!, withName: "process" as String)
+                    multipartFormData.append(documentURL, withName: "document")
+                } else {
+                    let paramsProcess = requestData.processParams
+                    paramsProcess?.finishCallbackUrl = HandleURLScheme.externalURLSchemeSuccess()
+                    let paramsJsonStrong = try JSONEncoder().encode(paramsProcess)
+                    let jsonString = String(data: paramsJsonStrong, encoding: .utf8)!
+                    multipartFormData.append(jsonString.data(using: String.Encoding.utf8)!, withName: "process" as String)
+                    let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
+                    let fileURL = URL(fileURLWithPath: documentsPath, isDirectory: true).appendingPathComponent(pdfName)
+                    multipartFormData.append(fileURL, withName: "document")
+                }
+            } catch {
+                print(error)
+            }
+            
+        }, to: url, usingThreshold: UInt64.init(), method: .post,
+                  headers: headers).responseJSON(completionHandler: { result in
+            if let error = result.error {
+                print(error)
+                completionHandler(nil, false)
+            } else if let data = result.data {
+                do {
+                    let jsonDecoder = JSONDecoder()
+                    let responseModel = try jsonDecoder.decode(UploadSignDocumentResponse.self, from: data)
+                    let str = String(data: data, encoding: .utf8) ?? ""
+                    print(str)
+                    print("Succesfully uploaded")
+                    completionHandler(responseModel, true)
+                    return
+                } catch {
+                    completionHandler(nil, false)
+                }
+            }
+        })
+    }
+    
+    public func buildUAEPASSSigningRequest(requestData: UAEPassSigningRequest) -> URLRequest? {
         do {
             guard let serviceType = requestData.serviceType else {
                 return nil
