@@ -64,6 +64,11 @@ class UAEPassViewController: UIViewController {
           let error = NSError(domain: "", code: 400)
           UAEPass.rejectResponse("ERROR", response, error)
         }
+        webVC.onDismiss = {
+            topViewController?.dismiss(animated: true)
+            let error = NSError(domain: "", code: 400)
+            UAEPass.rejectResponse("ERROR", "canceled", error)
+        }
         webVC.reloadwithURL(url: webVC.urlString)
         self.present(webVC, animated: true)
 //      }

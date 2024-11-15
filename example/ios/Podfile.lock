@@ -1,4 +1,5 @@
 PODS:
+  - Alamofire (5.4.4)
   - boost (1.76.0)
   - CocoaAsyncSocket (7.6.5)
   - DoubleConversion (1.1.6)
@@ -375,7 +376,7 @@ PODS:
   - React-jsinspector (0.72.6)
   - React-logger (0.72.6):
     - glog
-  - react-native-uaepass (1.0.6):
+  - react-native-uaepass (1.0.8):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
     - UAEPassClient
@@ -490,7 +491,8 @@ PODS:
     - React-logger (= 0.72.6)
     - React-perflogger (= 0.72.6)
   - SocketRocket (0.6.1)
-  - UAEPassClient (1.4)
+  - UAEPassClient (1.5):
+    - Alamofire (= 5.4.4)
   - Yoga (1.14.0)
   - YogaKit (1.18.1):
     - Yoga (~> 1.14)
@@ -564,6 +566,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - Alamofire
     - CocoaAsyncSocket
     - Flipper
     - Flipper-Boost-iOSX
@@ -667,10 +670,11 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   UAEPassClient:
-    :commit: 3e645a72b4a74bd1d2a85acf3aedb30bb83baec6
+    :commit: 0f5996f3dbaadd28b7c864507300c10569f5c760
     :git: https://github.com/vyshakh/react-native-uaepass-utils.git
 
 SPEC CHECKSUMS:
+  Alamofire: f3b09a368f1582ab751b3fff5460276e0d2cf5c9
   boost: 57d2868c099736d80fcd648bf211b4431e51a558
   CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
@@ -704,7 +708,7 @@ SPEC CHECKSUMS:
   React-jsiexecutor: 3bf18ff7cb03cd8dfdce08fbbc0d15058c1d71ae
   React-jsinspector: 194e32c6aab382d88713ad3dd0025c5f5c4ee072
   React-logger: cebf22b6cf43434e471dc561e5911b40ac01d289
-  react-native-uaepass: d80517612bf7e40d477502090de47c83d48f47c7
+  react-native-uaepass: 6fb414fc2aa5774efdc1dc1fb43febee91110312
   React-NativeModulesApple: 02e35e9a51e10c6422f04f5e4076a7c02243fff2
   React-perflogger: e3596db7e753f51766bceadc061936ef1472edc3
   React-RCTActionSheet: 17ab132c748b4471012abbcdcf5befe860660485
@@ -723,10 +727,10 @@ SPEC CHECKSUMS:
   React-utils: fa59c9a3375fb6f4aeb66714fd3f7f76b43a9f16
   ReactCommon: dd03c17275c200496f346af93a7b94c53f3093a4
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
-  UAEPassClient: 44fbfb5063ad7650993f518f718dac91748a135e
+  UAEPassClient: 41ca63e22d23abbf8a1d033080a55fe1dd9af41f
   Yoga: b76f1acfda8212aa16b7e26bcce3983230c82603
   YogaKit: f782866e155069a2cca2517aafea43200b01fd5a
 
-PODFILE CHECKSUM: caf94bb0f5745c9fc715468cbcfc10da4b95e3d7
+PODFILE CHECKSUM: 11a3b0a80c56e12b2a5a95821912698330ed5936
 
 COCOAPODS: 1.15.2
