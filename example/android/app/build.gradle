@@ -85,7 +85,7 @@ android {
         manifestPlaceholders = [
             appAuthRedirectScheme: "com.test",
             host_success: "uaePassSuccess",
-            host_failure: "uaePassFailure",
+            host_failure: "uaePassFail",
             scheme : "scheme",
         ]
         // UAEPass

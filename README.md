@@ -128,7 +128,7 @@ android.enableJetifier=true
 manifestPlaceholders = [
     appAuthRedirectScheme: "com.test",
     host_success: "uaePassSuccess",
-    host_failure: "uaePassFailure",
+    host_failure: "uaePassFail",
     scheme : "scheme",
 ]
 // UAEPass
@@ -200,7 +200,7 @@ const UAEPassConfig = {
   clientId: 'clientId',
   redirectURL: 'com.test://uaepass',
   successHost: 'uaePassSuccess',
-  failureHost: 'uaePassFailure',
+  failureHost: 'uaePassFail',
   scheme: 'testscheme',
   scope: 'urn:uae:digitalid:profile',
   locale: 'en',
