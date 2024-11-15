@@ -13,7 +13,7 @@ const UAEPassConfig = {
   clientId: 'clientId',
   redirectURL: 'com.test://uaepass',
   successHost: 'uaePassSuccess',
-  failureHost: 'uaePassFailure',
+  failureHost: 'uaePassFail',
   scheme: 'testscheme',
   scope: 'urn:uae:digitalid:profile',
   locale: 'en',
