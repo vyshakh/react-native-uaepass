@@ -101,14 +101,15 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
     }
 
     private void clearData() {
-        try{
+        try {
             CookieManager.getInstance().removeAllCookies(new ValueCallback<Boolean>() {
                 @Override
                 public void onReceiveValue(Boolean value) {
                 }
             });
             CookieManager.getInstance().flush();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
     }
 
     @ReactMethod
@@ -124,24 +125,33 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
      */
     @Override
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-        try{
+        try {
             if (requestCode == 5 && this.promise != null) {
                 if (data == null) {
                     this.promise.reject("Failed to authenticate", "Data intent is null");
                     return;
                 }
 
-                if (resultCode == Activity.RESULT_OK) {
+                if (resultCode == Activity.RESULT_OK && data.getStringExtra("accessCode") != null) {
                     WritableMap map = Arguments.createMap();
                     WritableMap profile = Arguments.createMap();
                     map.putString("accessCode", data.getStringExtra("accessCode"));
                     this.promise.resolve(map);
+                    return;
                 }
-                if (resultCode == Activity.RESULT_CANCELED) {
+                if (data.getStringExtra("error_description") != null) {
+                    this.promise.reject(data.getStringExtra("error_description"));
+                    return;
+                }
+                if (data.getStringExtra("error") != null) {
                     this.promise.reject(data.getStringExtra("error"));
+                    return;
                 }
+                this.promise.reject("Failed to authenticate", "Data intent is null");
+                return;
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
     }
 
 }
