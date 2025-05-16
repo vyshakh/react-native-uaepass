@@ -11,27 +11,28 @@ import ae.sdg.libraryuaepass.business.authentication.model.UAEPassAccessTokenReq
 import ae.sdg.libraryuaepass.business.profile.model.UAEPassProfileRequestModel;
 import ae.sdg.libraryuaepass.business.Language;
 import ae.sdg.libraryuaepass.utils.Utils;
-
+import android.net.Uri;
 import android.util.Log;
 
 public class UaepassRequestModels {
 
-    private static String UAE_PASS_CLIENT_ID = "";
-    private static String UAE_PASS_CLIENT_SECRET = "";
-    private static String REDIRECT_URL = "";
-    private static String ENV = "staging";
-    private static String SCOPE = "urn:uae:digitalid:profile";
-    private static final String RESPONSE_TYPE = "code";
-    private static final String ACR_VALUES_MOBILE = "urn:digitalid:authentication:flow:mobileondevice";
-    private static final String ACR_VALUES_WEB = "urn:safelayer:tws:policies:authentication:level:low";
-    private static String UAE_PASS_PACKAGE_ID = "ae.uaepass.mainapp";
-    private static String UAE_PASS_STG_PACKAGE_ID = "ae.uaepass.mainapp.stg";
+    public static String UAE_PASS_CLIENT_ID = "";
+    public static String UAE_PASS_CLIENT_SECRET = "";
+    public static String REDIRECT_URL = "";
+    public static String ENV = "staging";
+    public static String SCOPE = "urn:uae:digitalid:profile";
+    public static final String RESPONSE_TYPE = "code";
+    public static final String ACR_VALUES_MOBILE = "urn:digitalid:authentication:flow:mobileondevice";
+    public static final String ACR_VALUES_WEB = "urn:safelayer:tws:policies:authentication:level:low";
+    public static String UAE_PASS_PACKAGE_ID = "ae.uaepass.mainapp";
+    public static String UAE_PASS_STG_PACKAGE_ID = "ae.uaepass.mainapp.stg";
     public static String SCHEME = "";
-    private static String SUCCESS_HOST = "";
-    private static String FAILURE_HOST = "";
-    private static Language LOCALE = Language.EN;
-    private static final String STATE = Utils.INSTANCE.generateRandomString(24);
-    private static final String TAG = "UAEPass";
+    public static String SUCCESS_HOST = "";
+    public static String FAILURE_HOST = "";
+    public static Language LOCALE = Language.EN;
+    public static final String STATE = Utils.INSTANCE.generateRandomString(24);
+    public static final String TAG = "UAEPass";
+    public static String BASE_URL = "";
 
     public static void setConfig(String env, String uae_pass_client_id, String redirect_url,
             String scope, String scheme, String locale, String success_host, String failure_host) {
@@ -42,7 +43,13 @@ public class UaepassRequestModels {
         SCOPE = scope;
         SCHEME = scheme;
         SUCCESS_HOST = success_host;
-        FAILURE_HOST = failure_host;       
+        FAILURE_HOST = failure_host;
+
+        if (ENV.equals("production")) {
+            BASE_URL = "https://id.uaepass.ae";
+        } else {
+            BASE_URL = "https://stg-id.uaepass.ae";
+        }
 
         if (locale.equals("ar"))
             LOCALE = Language.AR;
@@ -51,7 +58,7 @@ public class UaepassRequestModels {
     public static boolean isPackageInstalled(PackageManager packageManager) {
         String packageName = null;
         boolean found = true;
-        if (ENV.equals("production")){
+        if (ENV.equals("production")) {
             packageName = UAE_PASS_PACKAGE_ID;
         } else {
             packageName = UAE_PASS_STG_PACKAGE_ID;
@@ -65,9 +72,19 @@ public class UaepassRequestModels {
     }
 
     private static Environment getEnvironment() {
-         if (ENV.equals("production"))
+        if (ENV.equals("production"))
             return PRODUCTION.INSTANCE;
-        return  STAGING.INSTANCE;
+        return STAGING.INSTANCE;
+    }
+
+    public static String buildAuthorizationUrl() {
+        return BASE_URL + "/idshub/authorize?" +
+                "client_id=" + UAE_PASS_CLIENT_ID + "&" +
+                "redirect_uri=" + REDIRECT_URL + "&" +
+                "response_type=code&" +
+                "scope=" + SCOPE + "&" +
+                "acr_values=" + ACR_VALUES_WEB + "&" +
+                "lang=" + LOCALE;
     }
 
     public static UAEPassAccessTokenRequestModel getAuthenticationRequestModel(Context context) {
@@ -82,19 +99,18 @@ public class UaepassRequestModels {
         Environment UAE_PASS_ENVIRONMENT = getEnvironment();
 
         return new UAEPassAccessTokenRequestModel(
-            UAE_PASS_ENVIRONMENT,
-            UAE_PASS_CLIENT_ID,
-            UAE_PASS_CLIENT_SECRET,
-            SCHEME,
-            FAILURE_HOST,
-            SUCCESS_HOST,
-            REDIRECT_URL,
-            SCOPE,
-            RESPONSE_TYPE,
-            ACR_VALUE,
-            STATE,
-            LOCALE
-        );
+                UAE_PASS_ENVIRONMENT,
+                UAE_PASS_CLIENT_ID,
+                UAE_PASS_CLIENT_SECRET,
+                SCHEME,
+                FAILURE_HOST,
+                SUCCESS_HOST,
+                REDIRECT_URL,
+                SCOPE,
+                RESPONSE_TYPE,
+                ACR_VALUE,
+                STATE,
+                LOCALE);
 
     }
 
@@ -110,20 +126,18 @@ public class UaepassRequestModels {
         Environment UAE_PASS_ENVIRONMENT = getEnvironment();
 
         return new UAEPassProfileRequestModel(
-            UAE_PASS_ENVIRONMENT,
-            UAE_PASS_CLIENT_ID,
-            UAE_PASS_CLIENT_SECRET,
-            SCHEME,
-            FAILURE_HOST,
-            SUCCESS_HOST,
-            REDIRECT_URL,
-            SCOPE,
-            RESPONSE_TYPE,
-            ACR_VALUE,
-            STATE,
-            LOCALE
-        );
+                UAE_PASS_ENVIRONMENT,
+                UAE_PASS_CLIENT_ID,
+                UAE_PASS_CLIENT_SECRET,
+                SCHEME,
+                FAILURE_HOST,
+                SUCCESS_HOST,
+                REDIRECT_URL,
+                SCOPE,
+                RESPONSE_TYPE,
+                ACR_VALUE,
+                STATE,
+                LOCALE);
     }
 
 }
-
