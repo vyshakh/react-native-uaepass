@@ -7,17 +7,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { UAEPass } from 'react-native-uaepass';
-
-const UAEPassConfig = {
-  env: 'staging', // or production // default staging
-  clientId: 'clientId',
-  redirectURL: 'com.test://uaepass',
-  successHost: 'uaePassSuccess',
-  failureHost: 'uaePassFail',
-  scheme: 'testscheme',
-  scope: 'urn:uae:digitalid:profile',
-  locale: 'en',
-};
+import {env,clientId,redirectURL,successHost,failureHost,scheme, scope, locale} from '@env'
+const UAEPassConfig = {env,clientId,redirectURL,successHost,failureHost,scheme, scope, locale};
 
 const App = () => {
   const [userData, setData] = useState(null);

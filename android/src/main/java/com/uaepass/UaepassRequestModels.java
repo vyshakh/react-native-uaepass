@@ -82,6 +82,7 @@ public class UaepassRequestModels {
                 "client_id=" + UAE_PASS_CLIENT_ID + "&" +
                 "redirect_uri=" + REDIRECT_URL + "&" +
                 "response_type=code&" +
+                "state" + STATE +
                 "scope=" + SCOPE + "&" +
                 "acr_values=" + ACR_VALUES_WEB + "&" +
                 "lang=" + LOCALE;
