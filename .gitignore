@@ -8,7 +8,7 @@
 # VSCode
 .vscode/
 jsconfig.json
-
+.env
 # Xcode
 #
 build/
