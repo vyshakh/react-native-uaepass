@@ -7,8 +7,26 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { UAEPass } from 'react-native-uaepass';
-import {env,clientId,redirectURL,successHost,failureHost,scheme, scope, locale} from '@env'
-const UAEPassConfig = {env,clientId,redirectURL,successHost,failureHost,scheme, scope, locale};
+import {
+  env,
+  clientId,
+  redirectURL,
+  successHost,
+  failureHost,
+  scheme,
+  scope,
+  locale,
+} from '@env';
+const UAEPassConfig = {
+  env,
+  clientId,
+  redirectURL,
+  successHost,
+  failureHost,
+  scheme,
+  scope,
+  locale,
+};
 
 const App = () => {
   const [userData, setData] = useState(null);
