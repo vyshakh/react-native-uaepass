@@ -56,6 +56,16 @@ target 'UaepassExample' do
     # Pods for testing
   end
 
+  # fixed warning in emulator:  The iOS Simulator deployment target 'IPHONEOS_DEPLOYMENT_TARGET' is set to 11.0, but the range of supported deployment target versions is 12.0 to 17.5.99. (in target 'Alamofire' from project 'Pods')
+  def handle_targets_config(installer)
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      end
+    end
+  end
+
+
   post_install do |installer|
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
@@ -63,6 +73,7 @@ target 'UaepassExample' do
       config[:reactNativePath],
       :mac_catalyst_enabled => false
     )
+    handle_targets_config(installer)
     __apply_Xcode_12_5_M1_post_install_workaround(installer)
   end
 end
