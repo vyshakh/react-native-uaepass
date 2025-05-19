@@ -33,9 +33,12 @@ public class UaepassRequestModels {
     public static final String STATE = Utils.INSTANCE.generateRandomString(24);
     public static final String TAG = "UAEPass";
     public static String BASE_URL = "";
+    public static String UI_LOCALE = "en";
+    public static Boolean CUSTOM_WEB_VIEW = false;
 
     public static void setConfig(String env, String uae_pass_client_id, String redirect_url,
-            String scope, String scheme, String locale, String success_host, String failure_host) {
+            String scope, String scheme, String locale, String success_host, String failure_host,
+            Boolean use_android_custom_webview) {
 
         ENV = env;
         UAE_PASS_CLIENT_ID = uae_pass_client_id;
@@ -44,6 +47,7 @@ public class UaepassRequestModels {
         SCHEME = scheme;
         SUCCESS_HOST = success_host;
         FAILURE_HOST = failure_host;
+        CUSTOM_WEB_VIEW = use_android_custom_webview;
 
         if (ENV.equals("production")) {
             BASE_URL = "https://id.uaepass.ae";
@@ -51,8 +55,11 @@ public class UaepassRequestModels {
             BASE_URL = "https://stg-id.uaepass.ae";
         }
 
-        if (locale.equals("ar"))
+        if (locale.equals("ar")) {
             LOCALE = Language.AR;
+            UI_LOCALE = "ar";
+        }
+
     }
 
     public static boolean isPackageInstalled(PackageManager packageManager) {
@@ -85,7 +92,7 @@ public class UaepassRequestModels {
                 "state" + STATE +
                 "scope=" + SCOPE + "&" +
                 "acr_values=" + ACR_VALUES_WEB + "&" +
-                "lang=" + LOCALE;
+                "ui_locales=" + UI_LOCALE;
     }
 
     public static UAEPassAccessTokenRequestModel getAuthenticationRequestModel(Context context) {
