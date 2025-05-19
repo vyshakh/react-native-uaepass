@@ -34,7 +34,9 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (UaepassRequestModels.CUSTOM_WEB_VIEW) {
+        if (UaepassRequestModels.isPackageInstalled(this.getPackageManager())) {
+            uaeLogin();
+        } else if (UaepassRequestModels.CUSTOM_WEB_VIEW) {
             handleWebView();
         } else {
             uaeLogin();
