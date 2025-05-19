@@ -26,6 +26,7 @@ const UAEPassConfig = {
   scheme,
   scope,
   locale,
+  useAndroidCustomWebView: false,
 };
 
 const App = () => {

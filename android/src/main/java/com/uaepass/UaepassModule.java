@@ -71,6 +71,7 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
             String locale = getString(options, "locale", null);
             String success_host = getString(options, "successHost", null);
             String failure_host = getString(options, "failureHost", null);
+            Boolean use_android_custom_webview = getBoolean(options, "useAndroidCustomWebView", false);
 
             if (uae_pass_client_id == null || redirect_url == null ||
                     scope == null ||
@@ -86,7 +87,7 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
             }
 
             UaepassRequestModels.setConfig(env, uae_pass_client_id, redirect_url, scope, scheme, locale, success_host,
-                    failure_host);
+                    failure_host, use_android_custom_webview);
 
             // Start a new activity for uaepass login activity
             Activity currentActivity = getCurrentActivity();
@@ -128,7 +129,7 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
         try {
             if (requestCode == 5 && this.promise != null) {
                 if (data == null) {
-                    this.promise.reject("Failed to authenticate", "Data intent is null");
+                    this.promise.reject("Error", "Authentication Process Canceled By User");
                     return;
                 }
 
@@ -147,7 +148,7 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
                     this.promise.reject(data.getStringExtra("error"));
                     return;
                 }
-                this.promise.reject("Failed to authenticate", "Data intent is null");
+                this.promise.reject("Error", "Failed to authenticate");
                 return;
             }
         } catch (Exception e) {

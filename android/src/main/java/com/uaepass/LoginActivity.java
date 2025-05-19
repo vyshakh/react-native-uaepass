@@ -34,10 +34,10 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (UaepassRequestModels.isPackageInstalled(this.getPackageManager())) {
-            uaeLogin();
-        } else {
+        if (UaepassRequestModels.CUSTOM_WEB_VIEW) {
             handleWebView();
+        } else {
+            uaeLogin();
         }
 
     }
@@ -78,13 +78,14 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void clearData() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        try {
             CookieManager.getInstance().removeAllCookies(new ValueCallback<Boolean>() {
                 @Override
                 public void onReceiveValue(Boolean value) {
                 }
             });
             CookieManager.getInstance().flush();
+        } catch (Exception e) {
         }
     }
 
@@ -127,7 +128,6 @@ public class LoginActivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                Log.d(TAG, url);
                 if (url.startsWith(UaepassRequestModels.REDIRECT_URL)) {
                     // Parse the code and close WebView
                     Uri uri = Uri.parse(url);
