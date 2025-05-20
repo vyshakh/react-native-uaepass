@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.Window;
 import android.webkit.WebView;
+import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -114,17 +115,27 @@ public class LoginActivity extends AppCompatActivity {
         modalContainer.setBackgroundColor(Color.WHITE);
         modalContainer.setElevation(10f);
 
-        // WebView
         WebView webView = new WebView(this);
         webView.clearCache(true);
         webView.clearHistory();
         webView.setVerticalScrollBarEnabled(false);
         webView.setHorizontalScrollBarEnabled(false);
-        webView.setOnTouchListener((v, event) -> event.getAction() == MotionEvent.ACTION_MOVE);
         // This will prevent touch-based scrolling entirely.
-
-        webView.getSettings().setJavaScriptEnabled(true);
+        webView.setOnTouchListener((v, event) -> event.getAction() == MotionEvent.ACTION_MOVE);
+        
+        // Set WebView settings
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setSupportZoom(false);
+        
+        // Set Chrome-like User-Agent
+        String chromeUserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
+        settings.setUserAgentString(chromeUserAgent);
+        
         webView.setWebViewClient(new WebViewClient());
+        
+        // Load the URL
         webView.loadUrl(url);
 
         webView.setWebViewClient(new WebViewClient() {
@@ -143,12 +154,7 @@ public class LoginActivity extends AppCompatActivity {
                     setResult(Activity.RESULT_OK, resultIntent);
                     finish();
                     return true;
-                } else if (url.contains("uaepass.ae/signup") || url.contains("uaepass.ae/account-recovery")) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    view.getContext().startActivity(intent);
-                    return true;
-                }
-
+                } 
                 return false;
             }
         });
