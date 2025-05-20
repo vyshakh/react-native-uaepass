@@ -204,6 +204,7 @@ const UAEPassConfig = {
   scheme: 'testscheme',
   scope: 'urn:uae:digitalid:profile',
   locale: 'en',
+  useAndroidCustomWebView: false
 };
 
 const App = () => {
