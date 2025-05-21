@@ -23,7 +23,10 @@ import android.view.MotionEvent;
 import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
 import android.content.pm.PackageManager;
-
+import android.view.View;
+import android.widget.ProgressBar;
+import android.view.Gravity;
+import android.graphics.Bitmap;
 import ae.sdg.libraryuaepass.UAEPassController;
 import ae.sdg.libraryuaepass.business.authentication.model.UAEPassAccessTokenRequestModel;
 import ae.sdg.libraryuaepass.UAEPassAccessCodeCallback;
@@ -102,47 +105,51 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        FrameLayout overlay = new FrameLayout(this);
-        overlay.setBackgroundColor(Color.parseColor("#80FFFFFF"));
+        // Create a parent layout
+        FrameLayout rootLayout = new FrameLayout(this);
 
-        // Modal Container (fixed size, centered)
-        FrameLayout modalContainer = new FrameLayout(this);
-        FrameLayout.LayoutParams modalParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
-        modalParams.setMargins(40, 40, 40, 40); // padding to create modal effect
-        modalContainer.setLayoutParams(modalParams);
-        modalContainer.setBackgroundColor(Color.WHITE);
-        modalContainer.setElevation(10f);
-
+        // Create WebView
         WebView webView = new WebView(this);
+        webView.setLayoutParams(new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
         webView.clearCache(true);
         webView.clearHistory();
         webView.setVerticalScrollBarEnabled(false);
         webView.setHorizontalScrollBarEnabled(false);
-        // This will prevent touch-based scrolling entirely.
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        webView.setScrollContainer(false);
+        webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
         webView.setOnTouchListener((v, event) -> event.getAction() == MotionEvent.ACTION_MOVE);
-        
+
         // Set WebView settings
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setSupportZoom(false);
-        
-        // Set Chrome-like User-Agent
-        String chromeUserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
-        settings.setUserAgentString(chromeUserAgent);
-        
-        webView.setWebViewClient(new WebViewClient());
-        
-        // Load the URL
-        webView.loadUrl(url);
 
+        // Create ProgressBar (spinner)
+        ProgressBar loader = new ProgressBar(this);
+        FrameLayout.LayoutParams loaderParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT);
+        loaderParams.gravity = Gravity.CENTER;
+        loader.setLayoutParams(loaderParams);
+        // WebViewClient with loader logic
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                loader.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                loader.setVisibility(View.GONE);
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.startsWith(UaepassRequestModels.REDIRECT_URL)) {
-                    // Parse the code and close WebView
                     Uri uri = Uri.parse(url);
                     String code = uri.getQueryParameter("code");
                     String error = uri.getQueryParameter("error");
@@ -154,37 +161,18 @@ public class LoginActivity extends AppCompatActivity {
                     setResult(Activity.RESULT_OK, resultIntent);
                     finish();
                     return true;
-                } 
+                }
                 return false;
             }
         });
 
-        modalContainer.addView(webView, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
+        // Load URL
+        webView.loadUrl(url);
 
-        // Close Button
-        ImageButton close = new ImageButton(this);
-        // Use a built-in white "X" icon or your own drawable
-        close.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
-        close.setColorFilter(Color.WHITE);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(Color.GRAY);
-        background.setShape(GradientDrawable.OVAL); // make it circular
-        background.setCornerRadius(100f); // high corner radius to ensure rounded
-        close.setBackground(background);
-        // Set padding and size
-        int size = 40;
-        FrameLayout.LayoutParams closeParams = new FrameLayout.LayoutParams(size, size);
-        closeParams.gravity = Gravity.END | Gravity.TOP;
-        closeParams.setMargins(6, 6, 6, 6);
-        close.setLayoutParams(closeParams);
-        // Add click listener
-        close.setOnClickListener(v -> finish());
-        // Add views in correct order
-        close.bringToFront();
-        overlay.addView(modalContainer);
-        overlay.addView(close, closeParams);
-        setContentView(overlay);
+        // Add WebView and loader to layout
+        rootLayout.addView(webView);
+        rootLayout.addView(loader);
+        setContentView(rootLayout);
     }
+
 }
