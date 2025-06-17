@@ -130,6 +130,7 @@ manifestPlaceholders = [
     host_success: "uaePassSuccess",
     host_failure: "uaePassFail",
     scheme : "scheme",
+    main_scheme:"com.test"
 ]
 // UAEPass
 ```
@@ -166,6 +167,7 @@ Add below lines to AndroidManifest.xml (screenshot below)
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="${main_scheme}"/>
 </intent-filter>
 <!-- //UAE PASS -->
 ```
