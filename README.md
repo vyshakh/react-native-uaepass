@@ -278,6 +278,36 @@ const styles = StyleSheet.create({
 export default App;
 ```
 
+### For Expo Managed Projects
+
+#### 1. Add the plugin to your **app.config.js**
+```
+"newArchEnabled": false,
+ ...
+    plugins: [
+      [
+        "react-native-uaepass",
+        {
+          "uaePassBundleURLName": "com.yourapp.uaepass",
+          "uaePassBundleURLScheme": "com.yourapp.uaepass",
+          "uaePassScheme": "scheme",
+          "uaePassSuccess": "success", 
+          "uaePassFailure": "failure",
+          "appAuthRedirectScheme": "com.yourapp.uaepass"
+          "appPackageId":"app.packageId"
+        }
+      ]
+    ]
+```
+#### 2. Run prebuild:
+```expo prebuild```
+
+#### 2. Run your app:
+```
+npx expo run:ios
+npx expo run:android
+```
+
 For more detailed usage and examples, refer to the documentation provided in the UAE Pass developer documentation.
 
 #### Contributing
