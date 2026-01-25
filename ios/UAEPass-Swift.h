@@ -7,12 +7,14 @@
 #ifndef UAEPass_Swift_h
 #define UAEPass_Swift_h
 
+#import <Foundation/Foundation.h>
 
 @class UAEPass;
 
 @interface UAEPass : NSObject
 - (NSString * _Nullable)getSuccessHost;
 - (NSString * _Nullable)getFailureHost;
+- (NSNumber * _Nullable)handleRedirectUrl:(NSURL * _Nonnull)url;
 - (void)handleLoginSuccess;
 - (void)handleLoginFailure;
 + (void)clearPromiseHandlers;

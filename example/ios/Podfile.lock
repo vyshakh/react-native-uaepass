@@ -316,7 +316,7 @@ PODS:
   - React-jsinspector (0.72.6)
   - React-logger (0.72.6):
     - glog
-  - react-native-uaepass (1.0.25):
+  - react-native-uaepass (1.0.8):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
     - UAEPassClient
@@ -603,7 +603,7 @@ SPEC CHECKSUMS:
   React-jsiexecutor: 3bf18ff7cb03cd8dfdce08fbbc0d15058c1d71ae
   React-jsinspector: 194e32c6aab382d88713ad3dd0025c5f5c4ee072
   React-logger: cebf22b6cf43434e471dc561e5911b40ac01d289
-  react-native-uaepass: 3757356aeb5457d4390fae5fb700f86f45d22faa
+  react-native-uaepass: 6fb414fc2aa5774efdc1dc1fb43febee91110312
   React-NativeModulesApple: 02e35e9a51e10c6422f04f5e4076a7c02243fff2
   React-perflogger: e3596db7e753f51766bceadc061936ef1472edc3
   React-RCTActionSheet: 17ab132c748b4471012abbcdcf5befe860660485
