@@ -5,6 +5,7 @@ import {
   Text,
   View,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { UAEPass } from 'react-native-uaepass';
 import {
@@ -26,7 +27,7 @@ const UAEPassConfig = {
   scheme,
   scope,
   locale,
-  useAndroidCustomWebView: false,
+  ...(Platform.OS === 'android' ? { useAndroidCustomWebView: false } : {}),
 };
 
 const App = () => {

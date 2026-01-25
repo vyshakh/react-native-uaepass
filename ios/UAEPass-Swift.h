@@ -11,10 +11,13 @@
 @class UAEPass;
 
 @interface UAEPass : NSObject
-- (NSString *)getSuccessHost;
-- (NSString *)getFailureHost;
+- (NSString * _Nullable)getSuccessHost;
+- (NSString * _Nullable)getFailureHost;
 - (void)handleLoginSuccess;
 - (void)handleLoginFailure;
++ (void)clearPromiseHandlers;
++ (void)resolveWithAccessCode:(NSString * _Nonnull)accessCode;
++ (void)rejectWithCode:(NSString * _Nonnull)code message:(NSString * _Nonnull)message error:(NSError * _Nullable)error;
 @end
 
 

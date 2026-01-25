@@ -1,6 +1,6 @@
 {
   "name": "react-native-uaepass",
-  "version": "1.0.25",
+  "version": "1.0.8",
   "description": "React-native module for UAE Pass",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -8,9 +8,7 @@
   "react-native": "src/index",
   "source": "src/index",
   "expo": {
-    "plugins": [
-      "./app.plugin.js"
-    ]
+    "plugins": ["./app.plugin.js"]
   },
   "files": [
     "src",

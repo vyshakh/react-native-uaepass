@@ -30,8 +30,8 @@
 {
 //  THIS block of code handles the UAE Pass success or failure redirects(links)
     UAEPass * obj = [[UAEPass alloc] init];
-    NSString *successHost = [obj getSuccessHost];
-    NSString *failureHost = [obj getFailureHost];
+    NSString *successHost = [[obj getSuccessHost] ?: @"" lowercaseString];
+    NSString *failureHost = [[obj getFailureHost] ?: @"" lowercaseString];
     if ([url.absoluteString containsString: successHost]) {
       [obj handleLoginSuccess];
       return YES;

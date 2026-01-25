@@ -8,8 +8,14 @@ import UAEPassClient
 
 
 class UAEPassViewController: UIViewController {
+  // Track whether the flow already finished to avoid double-callbacks on dismissal
+  private var didCompleteFlow = false
+  weak var embeddedWebVC: UAEPassWebViewController?
+  private var didStartLogin = false
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
+    guard !didStartLogin else { return }
+    didStartLogin = true
     
     UAEPASSRouter.shared.spConfig = SPConfig(redirectUriLogin: UAEPass.redirectURL!,
                                              scope: "urn:uae:digitalid:profile",
@@ -33,51 +39,96 @@ class UAEPassViewController: UIViewController {
     login()
 
   }
+
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+ 
+    let topViewController = UserInterfaceInfo.topViewController()
+    let navController = self.navigationController ?? (topViewController as? UINavigationController ?? topViewController?.navigationController)
+
+
+    if self.isBeingDismissed || self.navigationController?.isBeingDismissed == true {
+      self.didCompleteFlow = false
+
+      if let navController = navController {
+        navController.popToRootViewController(animated: true)
+      } else {
+        topViewController?.dismiss(animated: true)
+      }
+
+      UAEPass.reject(
+        withCode: "ERROR",
+        message: "canceled",
+        error: NSError(domain: "UAEPass", code: 400)
+      )
+    }
+  }
     
   func randomString(length: Int) -> String {
     let letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     return  String((0..<length).map{ _ in letters.randomElement()! })
   }
-   
-
+  
+  
   func login() {
     
     if let webVC = UAEPassWebViewController.instantiate() as? UAEPassWebViewController {
       
       webVC.urlString = UAEPassConfiguration.getServiceUrlForType(serviceType: .loginURL)
+      embeddedWebVC = webVC
       //print(webVC.urlString)
-      let topViewController = UIApplication.shared.windows.last { $0.isKeyWindow }?.rootViewController
+      let topViewController = UserInterfaceInfo.topViewController()
+      let navController = self.navigationController ?? (topViewController as? UINavigationController ?? topViewController?.navigationController)
 //      if let topViewController = UserInterfaceInfo.topViewController() {
-        webVC.onUAEPassSuccessBlock = {(code: String?) -> Void in
+      webVC.onUAEPassSuccessBlock = {(code: String?) -> Void in
+        self.didCompleteFlow = true
+        if let navController = navController {
+          navController.popToRootViewController(animated: true)
+        } else {
           topViewController?.dismiss(animated: true)
-          if let code = code {
-            var returnData = [String: String]()
-            returnData["accessCode"] = code
-            UAEPass.resolveResponse(returnData)
-          }else{
-            let error = NSError(domain: "", code: 400)
-            UAEPass.rejectResponse("ERROR", "Failed to get access code", error)
-          }
         }
-        webVC.onUAEPassFailureBlock = {(response: String?) -> Void in
+        if let code = code, !code.isEmpty {
+          UAEPass.resolve(withAccessCode: code)
+        } else {
+          UAEPass.reject(
+            withCode: "ERROR",
+            message: "Failed to get access code",
+            error: NSError(domain: "UAEPass", code: 400)
+          )
+        }
+      }
+      webVC.onUAEPassFailureBlock = {(response: String?) -> Void in
+        self.didCompleteFlow = true
+        if let navController = navController {
+          navController.popToRootViewController(animated: true)
+        } else {
           topViewController?.dismiss(animated: true)
-          let error = NSError(domain: "", code: 400)
-          UAEPass.rejectResponse("ERROR", response, error)
         }
-        webVC.onDismiss = {
+        UAEPass.reject(
+          withCode: "ERROR",
+          message: response ?? "UAE PASS login failed",
+          error: NSError(domain: "UAEPass", code: 400)
+        )
+      }
+      webVC.onDismiss = {
+          guard self.didCompleteFlow == true else { return }
+          self.didCompleteFlow = false
+          if let navController = navController {
+            navController.popToRootViewController(animated: true)
+          } else {
             topViewController?.dismiss(animated: true)
-            let error = NSError(domain: "", code: 400)
-            UAEPass.rejectResponse("ERROR", "canceled", error)
-        }
-        webVC.reloadwithURL(url: webVC.urlString)
-        self.present(webVC, animated: true)
-//      }
+          }
+          UAEPass.reject(
+            withCode: "ERROR",
+            message: "canceled",
+            error: NSError(domain: "UAEPass", code: 400)
+          )
+      }
+
+      self.addChild(webVC)
+      _ = self.view.addSubviewStretched(subview: webVC.view)
+      webVC.didMove(toParent: self)
+      webVC.reloadwithURL(url: webVC.urlString)
     }
   }
-  
-  
-  
-  
-  
-  
 }

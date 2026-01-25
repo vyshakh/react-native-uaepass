@@ -11,8 +11,8 @@ import WebKit
 @objc(UAEPass)
 class UAEPass: NSObject {
   
-  @objc public static var resolveResponse: RCTPromiseResolveBlock!
-  @objc public static var rejectResponse: RCTPromiseRejectBlock!
+  @objc public static var resolveResponse: RCTPromiseResolveBlock?
+  @objc public static var rejectResponse: RCTPromiseRejectBlock?
   public static var env: String!
   public static var clientId: String!
   public static var redirectURL: String!
@@ -28,25 +28,35 @@ class UAEPass: NSObject {
   }
     
   @objc
-  func getSuccessHost() -> String{
-    return UAEPass.successHost!
+  func getSuccessHost() -> String? {
+    return UAEPass.successHost
   }
 
   @objc
-  func getFailureHost() -> String{
-    return UAEPass.failureHost!
+  func getFailureHost() -> String? {
+    return UAEPass.failureHost
   }
 
   
   @objc
   func handleLoginSuccess(){
-    if let topViewController = UserInterfaceInfo.topViewController() {
+    DispatchQueue.main.async {
+      if let topViewController = UserInterfaceInfo.topViewController() {
         if let webViewController = topViewController as? UAEPassWebViewController {
-            webViewController.forceReload()
+          print("UAEPASS_DEBUG forceReload (top VC is web)")
+          webViewController.forceReload()
+          return
         }
-    }
+        if let container = topViewController as? UAEPassViewController,
+           let embeddedWebVC = container.embeddedWebVC {
+          print("UAEPASS_DEBUG forceReload (embedded web)")
+          embeddedWebVC.forceReload()
+          return
+        }
+      }
+    }     
   }
-  
+
   @objc
   func handleLoginFailure(){
     guard let webViewController = UserInterfaceInfo.topViewController() as? UAEPassWebViewController  else {
@@ -85,13 +95,21 @@ class UAEPass: NSObject {
 
       DispatchQueue.main.async {
         let viewController = UAEPassViewController()
-        let topViewController = UIApplication.shared.windows.last { $0.isKeyWindow }?.rootViewController
+        let topViewController = UserInterfaceInfo.topViewController()
+        let navController = topViewController as? UINavigationController ?? topViewController?.navigationController
+        if let navController = navController {
+          navController.pushViewController(viewController, animated: true)
+        } else {
           topViewController?.present(viewController, animated: true, completion: nil)
+        }
       }
 
     }else{
-      let error = NSError(domain: "", code: 400)
-      UAEPass.rejectResponse("ERROR", "One or more required parameters are missing", error)
+      UAEPass.reject(
+        withCode: "ERROR",
+        message: "One or more required parameters are missing",
+        error: NSError(domain: "UAEPass", code: 400)
+      )
     }
         
   }
@@ -114,4 +132,42 @@ class UAEPass: NSObject {
   
 }
 
+extension UAEPass {
+  @objc(clearPromiseHandlers)
+  public static func clearPromiseHandlers() {
+    resolveResponse = nil
+    rejectResponse = nil
+  }
 
+  @objc(resolveWithAccessCode:)
+  public static func resolve(withAccessCode accessCode: String) {
+    guard let resolve = resolveResponse else {
+      return
+    }
+
+    var payload: [String: String] = [:]
+    payload["accessCode"] = accessCode
+    clearPromiseHandlers()
+    resolve(payload)
+  }
+
+  @objc(rejectWithCode:message:error:)
+  public static func reject(
+    withCode code: String,
+    message: String,
+    error: NSError?
+  ) {
+    guard let reject = rejectResponse else {
+      return
+    }
+
+    let nsError = error ?? NSError(
+      domain: "UAEPass",
+      code: -1,
+      userInfo: [NSLocalizedDescriptionKey: message]
+    )
+
+    clearPromiseHandlers()
+    reject(code, message, nsError)
+  }
+}

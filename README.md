@@ -88,8 +88,8 @@ Add below code to <b>AppDelegate.mm </b>
 
 //  THIS block of code handles the UAE Pass success or failure redirects(links)
     UAEPass * obj = [[UAEPass alloc] init];
-    NSString *successHost = [obj getSuccessHost];
-    NSString *failureHost = [obj getFailureHost];
+    NSString *successHost = [[obj getSuccessHost] ?: @"" lowercaseString];
+    NSString *failureHost = [[obj getFailureHost] ?: @"" lowercaseString];
     if ([url.absoluteString containsString: successHost]) {
       [obj handleLoginSuccess];
       return YES;
@@ -206,7 +206,7 @@ const UAEPassConfig = {
   scheme: 'testscheme',
   scope: 'urn:uae:digitalid:profile',
   locale: 'en',
-  useAndroidCustomWebView: false
+  ...(Platform.OS === 'android' ? { useAndroidCustomWebView: false } : {}}
 };
 
 const App = () => {
@@ -289,9 +289,9 @@ export default App;
         "react-native-uaepass",
         {
           "uaePassBundleURLName": "com.yourapp.uaepass",
-          "uaePassBundleURLScheme": "com.yourapp.uaepass",
+          "uaePassBundleURLScheme": "com.yourapp.uaepass", 
           "uaePassScheme": "scheme",
-          "uaePassSuccess": "success", 
+          "uaePassSuccess": "success",
           "uaePassFailure": "failure",
           "appAuthRedirectScheme": "com.yourapp.uaepass"
           "appPackageId":"app.packageId"
