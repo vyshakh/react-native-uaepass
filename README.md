@@ -83,26 +83,67 @@ Add below code to <b>AppDelegate.mm </b>
 ```
 
 ```c
-- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options
+- (BOOL)application:(UIApplication *)application
+            openURL:(NSURL *)url
+            options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options
 {
+  UAEPass *uaepass = [[UAEPass alloc] init];
+  NSNumber *handled = [uaepass handleRedirectUrl:url];
+  if (handled != nil) {
+    return YES; // handled by UAEPass
+  }
 
-//  THIS block of code handles the UAE Pass success or failure redirects(links)
-    UAEPass * obj = [[UAEPass alloc] init];
-    NSString *successHost = [obj getSuccessHost];
-    NSString *failureHost = [obj getFailureHost];
-    if ([url.absoluteString containsString: successHost]) {
-      [obj handleLoginSuccess];
-      return YES;
-    }else if ([url.absoluteString containsString: failureHost]){
-      [obj handleLoginFailure];
-      return NO;
-    }
-  // UAE pass link handler ends here
   // Other link handler code goes here
+  // return [RCTLinkingManager application:application openURL:url options:options];
 
   return YES;
-// return [RCTLinkingManager application:application openURL:url options:options];
 }
+```
+
+If your project using <b>AppDelegate.swift</b>. Add below code.
+
+```c
+import react_native_uaepass
+```
+
+```c
+// Add these function to 'class AppDelegate'
+
+  func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+
+    if handleUAEPassRedirect(url: url) {
+      return true
+    }
+
+    return RCTLinkingManager.application(app, open: url, options: options)
+  }
+
+  func application(
+    _ application: UIApplication,
+    continue userActivity: NSUserActivity,
+    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+  ) -> Bool {
+
+    if let url = userActivity.webpageURL, handleUAEPassRedirect(url: url) {
+      return true
+    }
+
+    return RCTLinkingManager.application(
+      application,
+      continue: userActivity,
+      restorationHandler: restorationHandler
+    )
+  }
+
+  func handleUAEPassRedirect(url: URL) -> Bool {
+    let uaepass = UAEPass()
+    // nil = not UAEPASS URL
+    return uaepass.handleRedirectUrl(url) != nil
+  }
 ```
 
 ## Android Setup
@@ -112,6 +153,7 @@ Add below code to <b>AppDelegate.mm </b>
 android.useAndroidX=true
 android.enableJetifier=true
 ```
+
 ```gradle
 // Add below code to android/build.gradle file. Paste it above the last line -  "apply plugin..."
   allprojects {
@@ -206,7 +248,7 @@ const UAEPassConfig = {
   scheme: 'testscheme',
   scope: 'urn:uae:digitalid:profile',
   locale: 'en',
-  useAndroidCustomWebView: false
+  ...(Platform.OS === 'android' ? { useAndroidCustomWebView: false } : {}}
 };
 
 const App = () => {
@@ -281,6 +323,7 @@ export default App;
 ### For Expo Managed Projects
 
 #### 1. Add the plugin to your **app.config.js**
+
 ```
 "newArchEnabled": false,
  ...
@@ -291,7 +334,7 @@ export default App;
           "uaePassBundleURLName": "com.yourapp.uaepass",
           "uaePassBundleURLScheme": "com.yourapp.uaepass",
           "uaePassScheme": "scheme",
-          "uaePassSuccess": "success", 
+          "uaePassSuccess": "success",
           "uaePassFailure": "failure",
           "appAuthRedirectScheme": "com.yourapp.uaepass"
           "appPackageId":"app.packageId"
@@ -299,10 +342,13 @@ export default App;
       ]
     ]
 ```
+
 #### 2. Run prebuild:
-```expo prebuild```
+
+`expo prebuild`
 
 #### 2. Run your app:
+
 ```
 npx expo run:ios
 npx expo run:android

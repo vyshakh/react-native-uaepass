@@ -81,7 +81,7 @@ import WebKit
     
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
         let url = navigationAction.request.url
-        guard let urlString = navigationAction.request.mainDocumentURL?.absoluteString else { return }
+        let urlString = navigationAction.request.url?.absoluteString ?? ""
         print("### URL ### : \(urlString)")
         if urlString.contains("error=access_denied") || urlString.contains("error=cancelled") {
             if alreadyCanceled == false {
@@ -103,8 +103,8 @@ import WebKit
         } else if urlString.contains("uaepass://")  {
             // isUAEPassOpened = true
             let newURLString = urlString.replacingOccurrences(of: "uaepass://", with: UAEPASSRouter.shared.environmentConfig.uaePassSchemeURL)
-            successURLR = navigationAction.request.mainDocumentURL?.valueOf("successurl")
-            failureURLR = navigationAction.request.mainDocumentURL?.valueOf("failureurl")
+            successURLR = URL(string: urlString)?.valueOf("successurl")
+            failureURLR = URL(string: urlString)?.valueOf("failureurl")
             let listItems = newURLString.components(separatedBy: "successurl")
             if listItems.count > 0 {
                 if let customScheme = listItems.first {
@@ -141,6 +141,8 @@ import WebKit
     }
     
     public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        let nsError = error as NSError
+      
         if error._code == -1001 || error._code == -1003 || error._code == -1100 {
             if error._code == -1001 { // TIMED OUT:
                 // CODE to handle TIMEOUT
