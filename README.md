@@ -247,8 +247,7 @@ const UAEPassConfig = {
   failureHost: 'uaePassFail',
   scheme: 'testscheme',
   scope: 'urn:uae:digitalid:profile',
-  locale: 'en',
-  ...(Platform.OS === 'android' ? { useAndroidCustomWebView: false } : {}}
+  locale: 'en'
 };
 
 const App = () => {
@@ -336,7 +335,7 @@ export default App;
           "uaePassScheme": "scheme",
           "uaePassSuccess": "success",
           "uaePassFailure": "failure",
-          "appAuthRedirectScheme": "com.yourapp.uaepass"
+          "appAuthRedirectScheme": "com.yourapp.uaepass",
           "appPackageId":"app.packageId"
         }
       ]
@@ -345,7 +344,7 @@ export default App;
 
 #### 2. Run prebuild:
 
-`expo prebuild`
+`npx expo prebuild --clean`
 
 #### 2. Run your app:
 
