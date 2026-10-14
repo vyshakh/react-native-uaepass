@@ -1,10 +1,44 @@
 const {
   withAndroidManifest,
   withDangerousMod,
-  withGradleProperties,
 } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
+
+const LOGIN_ACTIVITY = 'com.uaepass.LoginActivity';
+
+// Directory holding the UAE PASS .aar relative to android/, resolved from this
+// package's real location so it also works when node_modules is hoisted
+// (monorepos) rather than assuming ../node_modules/react-native-uaepass.
+function uaePassLibsPath(projectRoot) {
+  const packageRoot = path.resolve(__dirname, '..');
+  const relative = path.relative(
+    path.join(projectRoot, 'android'),
+    path.join(packageRoot, 'android', 'libs')
+  );
+  return relative.split(path.sep).join('/');
+}
+
+function hasUaePassFlatDir(buildGradleContent, libsPath) {
+  return (
+    buildGradleContent.includes('react-native-uaepass/android/libs') ||
+    buildGradleContent.includes(libsPath)
+  );
+}
+
+function addUaePassFlatDir(buildGradleContent, libsPath) {
+  if (hasUaePassFlatDir(buildGradleContent, libsPath)) {
+    return buildGradleContent;
+  }
+  return buildGradleContent.replace(
+    /allprojects\s*\{[\s\S]*?repositories\s*\{/,
+    (match) => `${match}
+        // react-native-uaepass: UAE PASS SDK .aar
+        flatDir {
+            dirs "\${rootDir}/${libsPath}"
+        }`
+  );
+}
 
 const withUaePassAndroid = (config, uaepassConfig = {}) => {
   // --- Modify AndroidManifest.xml ---
@@ -83,173 +117,77 @@ const withUaePassAndroid = (config, uaepassConfig = {}) => {
       });
     }
 
-    // Add com.uaepass.LoginActivity
-    const loginActivityExists = manifest.application[0].activity.some(
-      (a) => a.$['android:name'] === 'com.uaepass.LoginActivity'
-    );
+    // Add com.uaepass.LoginActivity, replacing any copy from an earlier
+    // prebuild so changed hosts/scheme are picked up.
+    const scheme = uaepassConfig.uaePassScheme;
+    const hostSuccess = uaepassConfig.uaePassSuccess;
+    const hostFailure = uaepassConfig.uaePassFailure;
 
-    if (!loginActivityExists) {
-      const scheme = uaepassConfig.uaePassScheme;
-      const hostSuccess = uaepassConfig.uaePassSuccess;
-      const hostFailure = uaepassConfig.uaePassFailure;
-
-      if (!scheme || !hostSuccess || !hostFailure) {
-        throw new Error(
-          'Missing required android config values: scheme, uaePassSuccess, or uaePassFailure in app.config.js or app.json'
-        );
-      }
-
-      manifest.application[0].activity.push({
-        '$': {
-          'android:name': 'com.uaepass.LoginActivity',
-          'android:launchMode': 'singleTask',
-          'android:exported': 'true',
-          'android:parentActivityName': '.MainActivity',
-        },
-        'intent-filter': [
-          {
-            action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
-            category: [
-              { $: { 'android:name': 'android.intent.category.DEFAULT' } },
-              { $: { 'android:name': 'android.intent.category.BROWSABLE' } },
-            ],
-            data: [
-              { $: { 'android:host': hostSuccess, 'android:scheme': scheme } },
-              { $: { 'android:host': hostFailure, 'android:scheme': scheme } },
-            ],
-          },
-        ],
-      });
+    if (!scheme || !hostSuccess || !hostFailure) {
+      throw new Error(
+        'Missing required android config values: uaePassScheme, uaePassSuccess, or uaePassFailure in app.config.js or app.json'
+      );
     }
+
+    manifest.application[0].activity = manifest.application[0].activity.filter(
+      (a) => a.$['android:name'] !== LOGIN_ACTIVITY
+    );
+    manifest.application[0].activity.push({
+      '$': {
+        'android:name': LOGIN_ACTIVITY,
+        'android:launchMode': 'singleTask',
+        'android:exported': 'true',
+        'android:parentActivityName': '.MainActivity',
+      },
+      'intent-filter': [
+        {
+          action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
+          category: [
+            { $: { 'android:name': 'android.intent.category.DEFAULT' } },
+            { $: { 'android:name': 'android.intent.category.BROWSABLE' } },
+          ],
+          data: [
+            { $: { 'android:host': hostSuccess, 'android:scheme': scheme } },
+            { $: { 'android:host': hostFailure, 'android:scheme': scheme } },
+          ],
+        },
+      ],
+    });
 
     return config;
   });
 
   // --- Modify android/build.gradle ---
+  // The library depends on the bundled .aar by name, which Gradle can only
+  // resolve through a flatDir repository declared by the app.
   config = withDangerousMod(config, [
     'android',
     (config) => {
-      const buildGradlePath = path.join(
-        config.modRequest.projectRoot,
-        'android',
-        'build.gradle'
-      );
-      let buildGradleContent = fs.readFileSync(buildGradlePath, 'utf8');
-
-      const flatDir = `flatDir {
-    dirs "\${rootDir}/../node_modules/react-native-uaepass/android/libs"
-}`;
-
-      // Check if flatDir already exists to avoid duplicates
-      if (!buildGradleContent.includes('flatDir')) {
-        buildGradleContent = buildGradleContent.replace(
-          /allprojects\s*{[\s\S]*?repositories\s*{/,
-          `allprojects {
-    repositories {
-        ${flatDir}`
-        );
-        fs.writeFileSync(buildGradlePath, buildGradleContent, 'utf8');
+      const { projectRoot } = config.modRequest;
+      const buildGradlePath = path.join(projectRoot, 'android', 'build.gradle');
+      const libsPath = uaePassLibsPath(projectRoot);
+      const original = fs.readFileSync(buildGradlePath, 'utf8');
+      if (hasUaePassFlatDir(original, libsPath)) {
+        return config;
       }
+
+      const updated = addUaePassFlatDir(original, libsPath);
+      if (updated === original) {
+        throw new Error(
+          '[react-native-uaepass] Could not find allprojects { repositories { } } in android/build.gradle to add the UAE PASS flatDir repository.'
+        );
+      }
+      fs.writeFileSync(buildGradlePath, updated, 'utf8');
 
       return config;
     },
   ]);
-
-  // --- Modify android/app/build.gradle ---
-  config = withDangerousMod(config, [
-    'android',
-    (config) => {
-      const appBuildGradlePath = path.join(
-        config.modRequest.projectRoot,
-        'android',
-        'app',
-        'build.gradle'
-      );
-      let appBuildGradleContent = fs.readFileSync(appBuildGradlePath, 'utf8');
-
-      const packageId = uaepassConfig.appPackageId;
-      const appAuthRedirectScheme = uaepassConfig.appAuthRedirectScheme;
-
-      if (!packageId) {
-        throw new Error(
-          'Android package ID not defined in app.json or app.config.js'
-        );
-      }
-
-      if (!appAuthRedirectScheme) {
-        throw new Error(
-          'appAuthRedirectScheme not defined in app.json or app.config.js'
-        );
-      }
-
-      const manifestPlaceholders = `manifestPlaceholders = [ appAuthRedirectScheme: "${appAuthRedirectScheme}" ]`;
-
-      // Check if manifestPlaceholders already exists
-      if (!appBuildGradleContent.includes('manifestPlaceholders')) {
-        appBuildGradleContent = appBuildGradleContent.replace(
-          /defaultConfig\s*{/,
-          `defaultConfig {
-    ${manifestPlaceholders}`
-        );
-      } else {
-        appBuildGradleContent = appBuildGradleContent.replace(
-          /manifestPlaceholders\s*=\s*\[.*?\]/,
-          manifestPlaceholders
-        );
-      }
-
-      fs.writeFileSync(appBuildGradlePath, appBuildGradleContent, 'utf8');
-      return config;
-    },
-  ]);
-
-  // --- Modify gradle.properties ---
-  config = withGradleProperties(config, (config) => {
-    let jvmArgsUpdated = false;
-    let jetifierUpdated = false;
-
-    config.modResults = config.modResults.map((item) => {
-      if (item.key === 'org.gradle.jvmargs') {
-        jvmArgsUpdated = true;
-        return {
-          ...item,
-          value: '-Xmx4048m -XX:MaxMetaspaceSize=512m',
-        };
-      }
-
-      if (item.key === 'android.enableJetifier') {
-        jetifierUpdated = true;
-        return {
-          ...item,
-          value: 'true',
-        };
-      }
-
-      return item;
-    });
-
-    // Add org.gradle.jvmargs if it wasn't found
-    if (!jvmArgsUpdated) {
-      config.modResults.push({
-        type: 'property',
-        key: 'org.gradle.jvmargs',
-        value: '-Xmx4048m -XX:MaxMetaspaceSize=512m',
-      });
-    }
-
-    // Add android.enableJetifier if it wasn't found
-    if (!jetifierUpdated) {
-      config.modResults.push({
-        type: 'property',
-        key: 'android.enableJetifier',
-        value: 'true',
-      });
-    }
-
-    return config;
-  });
 
   return config;
 };
 
-module.exports = { withUaePassAndroid };
+module.exports = {
+  withUaePassAndroid,
+  // exported for tests
+  addUaePassFlatDir,
+};

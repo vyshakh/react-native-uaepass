@@ -6,7 +6,7 @@ require Pod::Executable.execute_command('node', ['-p',
   )', __dir__]).strip
 
 # platform :ios, min_ios_version_supported
-platform :ios, '13.0'
+platform :ios, '15.0'
 
 prepare_react_native_project!
 
@@ -30,7 +30,7 @@ end
 target 'UaepassExample' do
 
     #  UAE pass pod
-  pod 'UAEPassClient', :git => 'https://github.com/vyshakh/react-native-uaepass-utils.git', :branch => 'main'
+  pod 'UAEPassClient', :git => 'https://github.com/vyshakh/react-native-uaepass-utils.git', :branch => 'UAEPassClient_2.1'
 
   config = use_native_modules!
 

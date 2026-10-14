@@ -19,23 +19,34 @@ npm install react-native-uaepass
 yarn add react-native-uaepass
 ```
 
+## Versions
+
+| react-native-uaepass | UAE PASS iOS SDK (UAEPassClient) | UAE PASS Android SDK | Minimum iOS |
+| --- | --- | --- | --- |
+| 2.x | 2.1 | 2.x (`UAE-PASS-Android-Library-release.aar`) | 15.0 |
+| 1.x | 1.5 | 1.x | 13.0 |
+
+Upgrading from 1.x? See [Migrating from 1.x](#migrating-from-1x).
+
 ## iOS Setup
 
-UAEPass SDK for iOS requires iOS 13, so make sure that your deployment target is >= 13.0 in your iOS project settings. (Do not change it, if target is > 13.0)
+UAEPass SDK for iOS requires **iOS 15**, so make sure that your deployment target is >= 15.0 in your iOS project settings. (Do not change it, if target is > 15.0)
 
 ![alt text](./screenshots/ios/ios_target.png 'iOS target')
 
-Add the following to your iOS/Podfile above the `use_native_modules!` function and run `pod install` from the ios folder:
+Add **one** of the following to your ios/Podfile above the `use_native_modules!` function and run `pod install` from the ios folder:
 
 ```ruby
-# UAEPass dependencies
+# UAEPass dependencies — the SDK bundled with this package
 pod 'UAEPassClient', :path => '../node_modules/react-native-uaepass/ios/LocalPods/UAEPassClient'
 
+# --- or --- the same SDK from git
+# pod 'UAEPassClient', :git => 'https://github.com/vyshakh/react-native-uaepass-utils.git', :branch => 'UAEPassClient_2.1'
 ```
 
 ```ruby
-# platform :ios, min_ios_version_supported (Do this change only if your target is < 13.0)
-platform :ios, '13.0'
+# platform :ios, min_ios_version_supported (Do this change only if your target is < 15.0)
+platform :ios, '15.0'
 ```
 
 install the pod.
@@ -149,12 +160,6 @@ import react_native_uaepass
 ## Android Setup
 
 ```gradle
-// Add below line to android/gradle.properties
-android.useAndroidX=true
-android.enableJetifier=true
-```
-
-```gradle
 // Add below code to android/build.gradle file. Paste it above the last line -  "apply plugin..."
   allprojects {
       repositories{
@@ -166,9 +171,8 @@ android.enableJetifier=true
 ```
 
 ```gradle
-// Add below code to android/app/build.gradle file and use your UAE pass scheme
+// Add below code to android/app/build.gradle (defaultConfig) and use your UAE pass scheme
 manifestPlaceholders = [
-    appAuthRedirectScheme: "com.test",
     host_success: "uaePassSuccess",
     host_failure: "uaePassFail",
     scheme : "scheme",
@@ -177,7 +181,7 @@ manifestPlaceholders = [
 // UAEPass
 ```
 
-![alt text](./screenshots/android/android_app_build_gradle.png 'gradle')
+Jetifier and the `appAuthRedirectScheme` placeholder are no longer needed since 2.0 — the SDK no longer depends on AppAuth or the legacy support library.
 
 Add below lines to AndroidManifest.xml (screenshot below)
 
@@ -239,15 +243,19 @@ import {
 } from 'react-native';
 import { UAEPass } from 'react-native-uaepass';
 
-const UAEPassConfig = {
+import type { UAEPassConfig as Config } from 'react-native-uaepass';
+
+const UAEPassConfig: Config = {
   env: 'staging', // or production // default staging
   clientId: 'clientId',
   redirectURL: 'com.test://uaepass',
   successHost: 'uaePassSuccess',
   failureHost: 'uaePassFail',
   scheme: 'testscheme',
-  scope: 'urn:uae:digitalid:profile',
-  locale: 'en'
+  scope: 'urn:uae:digitalid:profile:general',
+  locale: 'en', // or 'ar' — optional, defaults to 'en'
+  // state: 'your-own-state', // optional — a random state is generated per login otherwise
+  // useAndroidCustomWebView: false, // optional, Android only
 };
 
 const App = () => {
@@ -319,6 +327,33 @@ const styles = StyleSheet.create({
 export default App;
 ```
 
+### Result and errors
+
+`UAEPass.login()` resolves with `{ accessCode, state }`. Send `accessCode` to **your backend** and exchange it for an access token there (then fetch the user profile from UAE PASS) — the client secret must never be shipped in the app.
+
+It rejects with one of these `code`s (also exported as `UAEPassErrorCode`):
+
+| code | meaning |
+| --- | --- |
+| `CANCELLED` | The user closed the login screen or cancelled in the UAE PASS app |
+| `LOGIN_FAILED` | UAE PASS returned an error; see `message` |
+| `MISSING_PARAMETERS` | A required config value is empty |
+| `STATE_MISMATCH` | The `state` returned by UAE PASS did not match the one sent |
+| `SUPERSEDED` | `login()` was called again before this one finished |
+
+```js
+import { UAEPass, UAEPassErrorCode } from 'react-native-uaepass';
+
+try {
+  const { accessCode } = await UAEPass.login(UAEPassConfig);
+  await api.post('/auth/uaepass', { code: accessCode });
+} catch (e) {
+  if (e.code !== UAEPassErrorCode.CANCELLED) {
+    console.warn('UAE PASS login failed', e.message);
+  }
+}
+```
+
 ### For Expo Managed Projects
 
 #### 1. Add the plugin to your **app.config.js**
@@ -335,12 +370,13 @@ export default App;
           "uaePassScheme": "scheme",
           "uaePassSuccess": "success",
           "uaePassFailure": "failure",
-          "appAuthRedirectScheme": "com.yourapp.uaepass",
           "appPackageId":"app.packageId"
         }
       ]
     ]
 ```
+
+The plugin also raises the iOS deployment target to 15.0 when it is lower. `appAuthRedirectScheme` is no longer used and can be removed.
 
 #### 2. Run prebuild:
 
@@ -352,6 +388,16 @@ export default App;
 npx expo run:ios
 npx expo run:android
 ```
+
+## Migrating from 1.x
+
+- **iOS 15 minimum** (UAEPassClient 2.1). Raise `platform :ios` and the Xcode deployment target, then `pod install`. If your Podfile points at `react-native-uaepass-utils` `main`, switch it to the bundled `:path` or the `UAEPassClient_2.1` branch.
+- **Android**: `android.enableJetifier` and the `appAuthRedirectScheme` placeholder are no longer required.
+- **Error codes** are now the values in the table above (they used to be `ERROR` on iOS and inconsistent on Android). Error `message`s are now populated on Android too.
+- **iOS now honours `scope`**. 1.x always sent `urn:uae:digitalid:profile` on iOS regardless of config — check the scope you pass is the one registered for your client.
+- **`locale` is optional on Android** too (was required there, optional on iOS).
+- On iOS the login screen is now always presented modally with a Cancel button instead of being pushed onto your app's navigation stack, and completing login no longer pops your navigation stack to the root.
+- The result now also includes `state`.
 
 For more detailed usage and examples, refer to the documentation provided in the UAE Pass developer documentation.
 
