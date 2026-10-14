@@ -1,31 +1,25 @@
 {
   "name": "react-native-uaepass-example",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
+  "main": "index.ts",
   "scripts": {
-    "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "start": "react-native start",
-    "postinstall": "patch-package",
-    "build:android": "cd android && ./gradlew assembleDebug --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a",
-    "build:ios": "cd ios && xcodebuild -workspace UaepassExample.xcworkspace -scheme UaepassExample -configuration Debug -sdk iphonesimulator CC=clang CPLUSPLUS=clang++ LD=clang LDPLUSPLUS=clang++ GCC_OPTIMIZATION_LEVEL=0 GCC_PRECOMPILE_PREFIX_HEADER=YES ASSETCATALOG_COMPILER_OPTIMIZATION=time DEBUG_INFORMATION_FORMAT=dwarf COMPILER_INDEX_STORE_ENABLE=NO"
+    "start": "expo start",
+    "prebuild": "expo prebuild --clean",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "build:android": "expo prebuild --platform android --clean --no-install && cd android && ./gradlew assembleDebug --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a",
+    "build:ios": "expo prebuild --platform ios --clean && cd ios && xcodebuild -workspace UAEPassExample.xcworkspace -scheme UAEPassExample -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build"
   },
   "dependencies": {
-    "patch-package": "^8.0.0",
-    "react": "18.2.0",
-    "react-native": "0.72.6",
-    "react-native-dotenv": "^3.4.11"
+    "expo": "~57.0.28",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
-    "@babel/preset-env": "^7.20.0",
-    "@babel/runtime": "^7.20.0",
-    "@react-native/metro-config": "^0.72.11",
-    "babel-plugin-module-resolver": "^5.0.0",
-    "metro-react-native-babel-preset": "0.76.8",
-    "pod-install": "^0.1.0"
-  },
-  "engines": {
-    "node": ">=16"
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
   }
 }

@@ -359,8 +359,6 @@ try {
 #### 1. Add the plugin to your **app.config.js**
 
 ```
-"newArchEnabled": false,
- ...
     plugins: [
       [
         "react-native-uaepass",
