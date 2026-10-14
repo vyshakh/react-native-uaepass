@@ -116,11 +116,11 @@ class UAEPass: NSObject {
   func logout(_ resolve: @escaping RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
     DispatchQueue.main.async {
       HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
-      let dataStore = WKWebsiteDataStore.default()
-      dataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
-        dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records) {
-          resolve("success")
-        }
+      WKWebsiteDataStore.default().removeData(
+        ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
+        modifiedSince: Date.distantPast
+      ) {
+        resolve("success")
       }
     }
   }

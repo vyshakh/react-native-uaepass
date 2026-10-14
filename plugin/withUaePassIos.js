@@ -105,10 +105,9 @@ function patchSwiftAppDelegate(appDelegatePath) {
   // 2. Merge into the existing `open url:` override if present, otherwise
   // insert a new override right after the class declaration.
   const openUrlOverrideRegex =
-    /(public override func application\(\s*_ app: UIApplication,\s*open url: URL,\s*options: \[UIApplication\.OpenURLOptionsKey: Any\] = \[:\]\s*\) -> Bool \{\s*)/;
+    /(public override func application\(\s*_ app: UIApplication,\s*open url: URL,\s*options: \[UIApplication\.OpenURLOptionsKey: Any\] = \[:\]\s*\) -> Bool \{[ \t]*\n)/;
 
-  const openUrlHook = `
-    let uaepass = UAEPass()
+  const openUrlHook = `    let uaepass = UAEPass()
     if uaepass.handleRedirectUrl(url) != nil {
       return true
     }
@@ -135,10 +134,9 @@ ${openUrlHook}
   // 3. Merge into the existing `continue userActivity:` override if present,
   // otherwise insert a new override.
   const continueActivityRegex =
-    /(public override func application\(\s*_ application: UIApplication,\s*continue userActivity: NSUserActivity,\s*restorationHandler: @escaping \(\[UIUserActivityRestoring\]\?\) -> Void\s*\) -> Bool \{\s*)/;
+    /(public override func application\(\s*_ application: UIApplication,\s*continue userActivity: NSUserActivity,\s*restorationHandler: @escaping \(\[UIUserActivityRestoring\]\?\) -> Void\s*\) -> Bool \{[ \t]*\n)/;
 
-  const continueActivityHook = `
-    if let url = userActivity.webpageURL {
+  const continueActivityHook = `    if let url = userActivity.webpageURL {
       let uaepass = UAEPass()
       if uaepass.handleRedirectUrl(url) != nil {
         return true
