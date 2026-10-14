@@ -17,11 +17,7 @@ extension URL: URLOpener {
             debugPrint("can't url : ", url.absoluteString)
             return
         }
-        if #available(iOS 10, *) {
-            UIApplication.shared.open(url)
-        } else {
-            UIApplication.shared.openURL(url)
-        }
+        UIApplication.shared.open(url)
     }
     
     func open() {
@@ -30,11 +26,7 @@ extension URL: URLOpener {
             debugPrint("can't url : ", url.absoluteString)
             return
         }
-        if #available(iOS 10, *) {
-            UIApplication.shared.open(url)
-        } else {
-            UIApplication.shared.openURL(url)
-        }
+        UIApplication.shared.open(url)
     }
     
     ///  Construct  URL by appending the parametrs "strings"

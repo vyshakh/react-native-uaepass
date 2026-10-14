@@ -16,6 +16,10 @@ import UIKit
     var profileURL: String
     var clientID: String
     var clientSecret: String
+    var eSignStart: String
+    var eSignRequest: String
+    var eSignSign: String
+
     public var env: UAEPASSEnvirnonment
     public var uaePassSchemeURL: String
     /*
@@ -27,44 +31,69 @@ import UIKit
         self.clientID = clientID
         self.clientSecret = clientSecret
         self.env = env
+        var baseURL = BaseUrls.prodTX.get()
+        var eSignBaseURL = BaseUrls.eSignProd.get()
         switch env {
         case .production:
             uaePassSchemeURL = "uaepass://"
             txBaseURL = BaseUrls.prodTX.get()
-            authURL = "\(BaseUrls.prodTX.get())idshub/authorize"
-            tokenURL = "\(BaseUrls.prodTX.get())idshub/token"
-            txTokenURL = "\(BaseUrls.prodTX.get())trustedx-authserver/oauth/main-as/token"
-            profileURL = "\(BaseUrls.prodTX.get())idshub/userinfo"
+            authURL = "\(baseURL)idshub/authorize"
+            tokenURL = "\(baseURL)idshub/token"
+            txTokenURL = "\(baseURL)trustedx-authserver/oauth/main-as/token"
+            profileURL = "\(baseURL)idshub/userinfo"
+            eSignStart = "\(eSignBaseURL)start?certType="
+            eSignRequest = "\(eSignBaseURL)request?certType="
+            eSignSign = "\(eSignBaseURL)sign?certType="
         case .staging:
             uaePassSchemeURL = "uaepassstg://"
             txBaseURL = BaseUrls.stgTX.get()
-            authURL = "\(BaseUrls.stgTX.get())idshub/authorize"
-            tokenURL = "\(BaseUrls.stgTX.get())idshub/token"
-            txTokenURL = "\(BaseUrls.stgTX.get())trustedx-authserver/oauth/main-as/token"
-            profileURL = "\(BaseUrls.stgTX.get())idshub/userinfo"
+            baseURL = BaseUrls.stgTX.get()
+            eSignBaseURL = BaseUrls.eSignSTG.get()
+            authURL = "\(baseURL)idshub/authorize"
+            tokenURL = "\(baseURL)idshub/token"
+            txTokenURL = "\(baseURL)trustedx-authserver/oauth/main-as/token"
+            profileURL = "\(baseURL)idshub/userinfo"
+            eSignStart = "\(eSignBaseURL)start?certType="
+            eSignRequest = "\(eSignBaseURL)request?certType="
+            eSignSign = "\(eSignBaseURL)sign?certType="
         case .qa:
             uaePassSchemeURL = "uaepassqa://"
             txBaseURL = BaseUrls.qaTX.get()
-            authURL = "\(BaseUrls.qaTX.get())idshub/authorize"
-            tokenURL = "\(BaseUrls.qaTX.get())idshub/token"
-            txTokenURL = "\(BaseUrls.qaTX.get())trustedx-authserver/oauth/main-as/token"
-            profileURL = "\(BaseUrls.qaTX.get())idshub/userinfo"
-            
-//            txBaseURL = BaseUrls.qaTX.get()
-//            authURL = "\(BaseUrls.qaTX.get())trustedx-authserver/oauth/main-as"
-//            tokenURL = "\(BaseUrls.qaTX.get())trustedx-authserver/oauth/main-as/token"
-//            txTokenURL = "\(BaseUrls.qaTX.get())trustedx-authserver/oauth/main-as/token"
-////            signingTokenURL = "\(BaseUrls.qaTX.get())trustedx-authserver/oauth/main-as/token"
-//            profileURL = "\(BaseUrls.qaTX.get())trustedx-resources/openid/v1/users/me"
-
+            baseURL = BaseUrls.qaTX.get()
+            eSignBaseURL = BaseUrls.eSignQA.get()
+            authURL = "\(baseURL)idshub/authorize"
+            tokenURL = "\(baseURL)idshub/token"
+            txTokenURL = "\(baseURL)trustedx-authserver/oauth/main-as/token"
+            profileURL = "\(baseURL)idshub/userinfo"
+            eSignStart = "\(eSignBaseURL)start?certType="
+            eSignRequest = "\(eSignBaseURL)request?certType="
+            eSignSign = "\(eSignBaseURL)sign?certType="
         case .dev:
+            //https://dev-ids.uaepass.ae/oauth2/authorize
             uaePassSchemeURL = "uaepassdev://"
             txBaseURL = BaseUrls.devTX.get()
-            authURL = "\(BaseUrls.devTX.get())idshub/authorize"
-            tokenURL = "\(BaseUrls.devTX.get())idshub/token"
-            txTokenURL = "\(BaseUrls.devTX.get())trustedx-authserver/oauth/main-as/token"
-            profileURL = "\(BaseUrls.devTX.get())idshub/userinfo"
+            baseURL = BaseUrls.devTX.get()
+            eSignBaseURL = BaseUrls.eSignDev.get()
+            authURL = "https://dev-ids.uaepass.ae/oauth2/authorize"
+            tokenURL = "https://dev-ids.uaepass.ae/oauth2/token"
+            txTokenURL = "https://dev-ids.uaepass.ae/oauth2/trustedx-authserver/oauth/main-as/token"
+            profileURL = "https://dev-ids.uaepass.ae/oauth2/userinfo"
+            eSignStart = "\(eSignBaseURL)start?certType="
+            eSignRequest = "\(eSignBaseURL)request?certType="
+            eSignSign = "\(eSignBaseURL)sign?certType="
         }
+    }
+    
+    func getESignStart(type: ESignType) -> String {
+        return eSignStart + type.rawValue
+    }
+    
+    func getESRequest(type: ESignType) -> String {
+        return eSignRequest + type.rawValue
+    }
+    
+    func getESignSign(type: ESignType) -> String {
+        return eSignSign + type.rawValue
     }
 }
 

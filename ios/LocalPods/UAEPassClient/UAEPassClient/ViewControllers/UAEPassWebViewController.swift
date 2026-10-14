@@ -9,7 +9,6 @@
 import UIKit
 import WebKit
 
-@available(iOS 13.0, *)
 @objc public class UAEPassWebViewController: UIViewController, WKNavigationDelegate {
     
     @objc public var urlString: String!
@@ -18,7 +17,7 @@ import WebKit
     @objc public var onUAEPassFailureBlock: ((String) -> Void)? = nil
     @objc public var onSigningCompleted: (() -> Void)? = nil
     @objc public var onDismiss: (() -> Void)? = nil
-    @objc var webView: WKWebView?
+    @objc public var webView: WKWebView?
     var successURLR: String?
     var failureURLR: String?
     public var isSigning: Bool? = false
@@ -81,7 +80,7 @@ import WebKit
     
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
         let url = navigationAction.request.url
-        let urlString = navigationAction.request.url?.absoluteString ?? ""
+        guard let urlString = navigationAction.request.mainDocumentURL?.absoluteString else { return }
         print("### URL ### : \(urlString)")
         if urlString.contains("error=access_denied") || urlString.contains("error=cancelled") {
             if alreadyCanceled == false {
@@ -100,11 +99,19 @@ import WebKit
                 }
             }
             decisionHandler(.cancel, contentMode)
+        } else if urlString.contains("code=") {
+            if let url = url, let token = url.valueOf("code") {
+                if onUAEPassSuccessBlock != nil && !token.isEmpty {
+                    skipDismiss = true
+                    onUAEPassSuccessBlock?(urlString)
+                }
+            }
+            decisionHandler(.cancel, contentMode)
         } else if urlString.contains("uaepass://")  {
             // isUAEPassOpened = true
             let newURLString = urlString.replacingOccurrences(of: "uaepass://", with: UAEPASSRouter.shared.environmentConfig.uaePassSchemeURL)
-            successURLR = URL(string: urlString)?.valueOf("successurl")
-            failureURLR = URL(string: urlString)?.valueOf("failureurl")
+            successURLR = navigationAction.request.mainDocumentURL?.valueOf("successurl")
+            failureURLR = navigationAction.request.mainDocumentURL?.valueOf("failureurl")
             let listItems = newURLString.components(separatedBy: "successurl")
             if listItems.count > 0 {
                 if let customScheme = listItems.first {
@@ -141,8 +148,6 @@ import WebKit
     }
     
     public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        let nsError = error as NSError
-      
         if error._code == -1001 || error._code == -1003 || error._code == -1100 {
             if error._code == -1001 { // TIMED OUT:
                 // CODE to handle TIMEOUT
@@ -170,7 +175,6 @@ import WebKit
 }
 
 // MARK: - ConfigrationInstanceProtocol
-@available(iOS 13.0, *)
 extension UAEPassWebViewController: ConfigrationInstanceProtocol {
     @objc public static func instantiate() -> NSObject {
         let bundle = Bundle.init(for: UAEPassWebViewController.self)
