@@ -336,20 +336,37 @@ It rejects with one of these `code`s (also exported as `UAEPassErrorCode`):
 | code | meaning |
 | --- | --- |
 | `CANCELLED` | The user closed the login screen or cancelled in the UAE PASS app |
-| `LOGIN_FAILED` | UAE PASS returned an error; see `message` |
+| `LOGIN_FAILED` | UAE PASS returned another error, or the page couldn't load (offline); see `message` |
 | `MISSING_PARAMETERS` | A required config value is empty |
 | `STATE_MISMATCH` | The `state` returned by UAE PASS did not match the one sent |
 | `SUPERSEDED` | `login()` was called again before this one finished |
 
+When the failure came from UAE PASS itself, the error's `userInfo` carries exactly what UAE PASS returned, so you can show your own message for each case — for example the ones UAE PASS's [text message guidelines](https://docs.uaepass.ae/guidelines/design-guidelines/text-message-guidelines) require:
+
+| `userInfo` field | value |
+| --- | --- |
+| `error` | The OAuth `error` as sent by UAE PASS: `access_denied`, `cancelledOnApp`, `invalid_request`, `login_required`, … (UAE PASS documents these four as "user cancelled the login", so they all come with `code: 'CANCELLED'`) |
+| `errorDescription` | The OAuth `error_description`, when UAE PASS sent one (iOS, and Android with `useAndroidCustomWebView`) |
+
+`userInfo` is absent when there is nothing from UAE PASS to report — e.g. the user tapped Cancel on the login screen.
+
 ```js
-import { UAEPass, UAEPassErrorCode } from 'react-native-uaepass';
+import { UAEPass, UAEPassErrorCode, isUAEPassError } from 'react-native-uaepass';
 
 try {
   const { accessCode } = await UAEPass.login(UAEPassConfig);
   await api.post('/auth/uaepass', { code: accessCode });
 } catch (e) {
-  if (e.code !== UAEPassErrorCode.CANCELLED) {
-    console.warn('UAE PASS login failed', e.message);
+  if (!isUAEPassError(e)) throw e;
+
+  switch (e.userInfo?.error ?? e.code) {
+    case 'cancelledOnApp':
+    case 'access_denied':
+    case UAEPassErrorCode.CANCELLED:
+      showMessage(t('uaepass.userCancelled'));
+      break;
+    default:
+      showMessage(t('uaepass.somethingWentWrong'));
   }
 }
 ```
@@ -391,7 +408,7 @@ npx expo run:android
 
 - **iOS 15 minimum** (UAEPassClient 2.1). Raise `platform :ios` and the Xcode deployment target, then `pod install`. If your Podfile points at `react-native-uaepass-utils` `main`, switch it to the bundled `:path` or the `UAEPassClient_2.1` branch.
 - **Android**: `android.enableJetifier` and the `appAuthRedirectScheme` placeholder are no longer required.
-- **Error codes** are now the values in the table above (they used to be `ERROR` on iOS and inconsistent on Android). Error `message`s are now populated on Android too.
+- **Error codes** are now the values in the table above (they used to be `ERROR` on iOS and inconsistent on Android). Error `message`s are now populated on Android too, and the raw UAE PASS `error` / `error_description` are available on `error.userInfo` .
 - **iOS now honours `scope`**. 1.x always sent `urn:uae:digitalid:profile` on iOS regardless of config — check the scope you pass is the one registered for your client.
 - **`locale` is optional on Android** too (was required there, optional on iOS).
 - On iOS the login screen is now always presented modally with a Cancel button instead of being pushed onto your app's navigation stack, and completing login no longer pops your navigation stack to the root.

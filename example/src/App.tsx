@@ -12,6 +12,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   UAEPass,
   UAEPassErrorCode,
+  isUAEPassError,
   type UAEPassConfig,
   type UAEPassLoginResult,
 } from 'react-native-uaepass';
@@ -37,7 +38,13 @@ type Status =
   | { kind: 'idle' }
   | { kind: 'busy' }
   | { kind: 'success'; result: UAEPassLoginResult }
-  | { kind: 'error'; code: string; message: string };
+  | {
+      kind: 'error';
+      code: string;
+      message: string;
+      /** UAE PASS's own OAuth `error`, e.g. access_denied, cancelledOnApp. */
+      uaePassError?: string;
+    };
 
 export default function App() {
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
@@ -49,12 +56,17 @@ export default function App() {
       // In a real app, send result.accessCode to your backend and exchange it
       // for an access token there.
       setStatus({ kind: 'success', result });
-    } catch (e: any) {
-      setStatus({
-        kind: 'error',
-        code: e?.code ?? 'UNKNOWN',
-        message: e?.message ?? String(e),
-      });
+    } catch (e) {
+      setStatus(
+        isUAEPassError(e)
+          ? {
+              kind: 'error',
+              code: e.code,
+              message: e.message,
+              uaePassError: e.userInfo?.error,
+            }
+          : { kind: 'error', code: 'UNKNOWN', message: String(e) }
+      );
     }
   };
 
@@ -94,6 +106,11 @@ export default function App() {
                   : status.code}
               </Text>
               <Text style={styles.value}>{status.message}</Text>
+              {status.uaePassError && (
+                <Text selectable style={styles.value}>
+                  error={status.uaePassError}
+                </Text>
+              )}
             </View>
           )}
 

@@ -156,8 +156,13 @@ class UAEPass: NSObject {
     }
 
     if host == "uaepassfail" || (!failureHost.isEmpty && host == failureHost) {
-      completeUAEPassFailure(from: url)
-      dismissPresentedUAEPassFlow()
+      DispatchQueue.main.async {
+        if let controller = UAEPass.activeController {
+          controller.handleAppFailure(callbackURL: url)
+        } else {
+          self.completeUAEPassFailure(from: url)
+        }
+      }
       return NSNumber(value: true)
     }
 
@@ -175,12 +180,11 @@ class UAEPass: NSObject {
   }
 
   private func completeUAEPassFailure(from url: URL) {
-    let message =
-      url.valueOf("error_description") ??
-      url.valueOf("error") ??
-      "UAE PASS login was cancelled"
-
-    UAEPass.reject(withCode: UAEPass.errorCancelled, message: message, error: nil)
+    if let error = url.valueOf("error"), !error.isEmpty {
+      UAEPass.reject(uaePassError: error, description: url.valueOf("error_description"))
+    } else {
+      UAEPass.reject(withCode: UAEPass.errorCancelled, message: "UAE PASS login was cancelled", error: nil)
+    }
   }
 
   private func dismissPresentedUAEPassFlow() {
@@ -230,6 +234,25 @@ extension UAEPass {
       return
     }
     resolve(withAccessCode: code)
+  }
+
+  /// OAuth `error` values UAE PASS documents as "user cancelled the login"
+  /// (lower-cased; see docs.uaepass.ae text-message guidelines).
+  static let cancellationErrors: Set<String> = [
+    "access_denied", "cancelled", "cancelledonapp", "invalid_request", "login_required",
+  ]
+
+  /// Rejects with an error UAE PASS returned, keeping its raw `error` and
+  /// `error_description` in the JS error's `userInfo` so the app can show its
+  /// own (or UAE PASS's guideline) message for each case.
+  static func reject(uaePassError error: String, description: String?) {
+    let code = cancellationErrors.contains(error.lowercased()) ? errorCancelled : errorLoginFailed
+    let message = (description?.isEmpty == false ? description : nil) ?? error
+    var userInfo: [String: Any] = [NSLocalizedDescriptionKey: message, "error": error]
+    if let description = description, !description.isEmpty {
+      userInfo["errorDescription"] = description
+    }
+    reject(withCode: code, message: message, error: NSError(domain: "UAEPass", code: -1, userInfo: userInfo))
   }
 
   @objc(resolveWithAccessCode:)

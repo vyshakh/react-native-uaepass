@@ -49,7 +49,14 @@ export interface UAEPassLoginResult {
 /** `code` values of errors rejected by {@link UAEPassModule.login}. */
 export const UAEPassErrorCode = {
   MISSING_PARAMETERS: 'MISSING_PARAMETERS',
+  /**
+   * The user backed out, either in the login screen or in the UAE PASS app.
+   * Includes the OAuth errors UAE PASS documents as a user cancellation:
+   * `access_denied`, `cancelled`, `cancelledOnApp`, `invalid_request`,
+   * `login_required` (see `userInfo.error`).
+   */
   CANCELLED: 'CANCELLED',
+  /** Any other failure; see `message` and `userInfo.error`. */
   LOGIN_FAILED: 'LOGIN_FAILED',
   STATE_MISMATCH: 'STATE_MISMATCH',
   /** A second `login()` started before this one finished. */
@@ -58,6 +65,39 @@ export const UAEPassErrorCode = {
 
 export type UAEPassErrorCode =
   (typeof UAEPassErrorCode)[keyof typeof UAEPassErrorCode];
+
+/**
+ * What UAE PASS itself returned, when the failure came from UAE PASS (as
+ * opposed to, say, the user closing the login screen or the device being
+ * offline). Use it to show the message the UAE PASS text-message guidelines
+ * ask for: https://docs.uaepass.ae/guidelines/design-guidelines/text-message-guidelines
+ */
+export interface UAEPassErrorInfo {
+  /**
+   * The OAuth `error` value exactly as UAE PASS sent it, e.g.
+   * `access_denied`, `cancelledOnApp`, `invalid_request`, `login_required`.
+   */
+  error?: string;
+  /** The OAuth `error_description`, when UAE PASS sent one (iOS and the Android custom web view only). */
+  errorDescription?: string;
+}
+
+/** The error `UAEPass.login()` rejects with. */
+export interface UAEPassError extends Error {
+  code: UAEPassErrorCode;
+  userInfo?: UAEPassErrorInfo | null;
+}
+
+const errorCodes = new Set<string>(Object.values(UAEPassErrorCode));
+
+/** Narrows a caught value to the error `UAEPass.login()` rejects with. */
+export function isUAEPassError(error: unknown): error is UAEPassError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    errorCodes.has((error as { code?: unknown }).code as string)
+  );
+}
 
 export interface UAEPassModule {
   login(config: UAEPassConfig): Promise<UAEPassLoginResult>;

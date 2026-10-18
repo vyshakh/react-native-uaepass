@@ -6,7 +6,11 @@ import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
@@ -32,6 +36,14 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
     static final String ERROR_LOGIN_FAILED = "LOGIN_FAILED";
     static final String ERROR_STATE_MISMATCH = "STATE_MISMATCH";
     static final String ERROR_SUPERSEDED = "SUPERSEDED";
+
+    // OAuth `error` values UAE PASS documents as "user cancelled the login"
+    // (lower-cased; see docs.uaepass.ae text-message guidelines).
+    private static final Set<String> CANCELLATION_ERRORS = new HashSet<>(Arrays.asList(
+            "access_denied", "cancelled", "cancelledonapp", "invalid_request", "login_required"));
+
+    // An OAuth error code, as opposed to one of the SDK's own sentences.
+    private static final Pattern OAUTH_ERROR = Pattern.compile("^[A-Za-z0-9_.-]+$");
 
     // Arbitrary, but distinctive enough not to collide with the host app's own codes.
     private static final int LOGIN_REQUEST_CODE = 0x0AE9;
@@ -80,6 +92,14 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
         this.promise = null;
         if (pending != null) {
             pending.reject(code, message);
+        }
+    }
+
+    private void rejectPending(String code, String message, WritableMap userInfo) {
+        Promise pending = this.promise;
+        this.promise = null;
+        if (pending != null) {
+            pending.reject(code, message, userInfo);
         }
     }
 
@@ -170,14 +190,34 @@ public class UaepassModule extends ReactContextBaseJavaModule implements Activit
 
         String error = data.getStringExtra(LoginActivity.EXTRA_ERROR);
         String description = data.getStringExtra(LoginActivity.EXTRA_ERROR_DESCRIPTION);
-        String message = description != null ? description : error;
-        // The SDK reports a user cancel as "Process canceled by user."; the
-        // custom web view gets OAuth's "access_denied".
-        boolean cancelled = error != null &&
-                (error.contains("access_denied") || error.toLowerCase(Locale.ROOT).contains("cancel"));
+        if (error == null || error.isEmpty()) {
+            rejectPending(ERROR_LOGIN_FAILED, "Failed to authenticate");
+            return;
+        }
 
-        rejectPending(cancelled ? ERROR_CANCELLED : ERROR_LOGIN_FAILED,
-                message != null ? message : "Failed to authenticate");
+        // The SDK passes UAE PASS's OAuth `error` (e.g. access_denied,
+        // cancelledOnApp) through as-is, but reports its own failures as
+        // sentences ("Process canceled by user.", "State mismatch.").
+        if (OAUTH_ERROR.matcher(error).matches()) {
+            String code = CANCELLATION_ERRORS.contains(error.toLowerCase(Locale.ROOT))
+                    ? ERROR_CANCELLED : ERROR_LOGIN_FAILED;
+            WritableMap userInfo = Arguments.createMap();
+            userInfo.putString("error", error);
+            if (description != null && !description.isEmpty()) {
+                userInfo.putString("errorDescription", description);
+            }
+            rejectPending(code, description != null && !description.isEmpty() ? description : error, userInfo);
+            return;
+        }
+
+        String lower = error.toLowerCase(Locale.ROOT);
+        if (lower.contains("state")) {
+            rejectPending(ERROR_STATE_MISMATCH, error);
+        } else if (lower.contains("cancel")) {
+            rejectPending(ERROR_CANCELLED, error);
+        } else {
+            rejectPending(ERROR_LOGIN_FAILED, error);
+        }
     }
 
 }
