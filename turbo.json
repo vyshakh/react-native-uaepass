@@ -4,29 +4,31 @@
     "build:android": {
       "inputs": [
         "package.json",
-        "android",
-        "!android/build",
+        "plugin",
+        "app.plugin.js",
         "src/*.ts",
         "src/*.tsx",
         "example/package.json",
-        "example/android",
-        "!example/android/.gradle",
-        "!example/android/build",
-        "!example/android/app/build"
+        "example/app.config.ts",
+        "example/react-native.config.js",
+        "android",
+        "!android/build"
       ],
       "outputs": []
     },
     "build:ios": {
       "inputs": [
         "package.json",
-        "*.podspec",
-        "ios",
+        "plugin",
+        "app.plugin.js",
         "src/*.ts",
         "src/*.tsx",
         "example/package.json",
-        "example/ios",
-        "!example/ios/build",
-        "!example/ios/Pods"
+        "example/app.config.ts",
+        "example/react-native.config.js",
+        "*.podspec",
+        "ios",
+        "!ios/build"
       ],
       "outputs": []
     }

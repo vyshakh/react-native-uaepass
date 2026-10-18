@@ -88,9 +88,8 @@ public enum UAEPAssParams: String {
             serviceUrl += "?redirect_uri=" + spConfig.redirectUriLogin
             serviceUrl += "&client_id=" + UAEPASSRouter.shared.environmentConfig.clientID
             serviceUrl += "&response_type=" + UAEPAssParams.responseType.get()
-            serviceUrl += "&state=" + spConfig.state
             serviceUrl += "&scope=" + spConfig.loginScope
-            
+            serviceUrl += "&state=" + spConfig.state
             //Check If UAE Pass App is installed to redirect, otherwise open AppStore Link.
             let schemeString = UAEPASSRouter.shared.environmentConfig.uaePassSchemeURL
             if UIApplication.shared.canOpenURL(URL(string: schemeString)!) {

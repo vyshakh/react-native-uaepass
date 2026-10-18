@@ -1,6 +1,6 @@
 {
   "name": "react-native-uaepass",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "React-native module for UAE Pass",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -84,9 +84,6 @@
     "turbo": "^1.10.7",
     "typescript": "^5.0.2"
   },
-  "resolutions": {
-    "@types/react": "17.0.21"
-  },
   "peerDependencies": {
     "react": "*",
     "react-native": "*"
@@ -143,12 +140,16 @@
           "trailingComma": "es5",
           "useTabs": false
         }
-      ]
+      ],
+      "react/react-in-jsx-scope": "off"
     }
   },
   "eslintIgnore": [
     "node_modules/",
-    "lib/"
+    "lib/",
+    "example/ios/",
+    "example/android/",
+    "example/.expo/"
   ],
   "prettier": {
     "quoteProps": "consistent",

@@ -12,6 +12,13 @@ import WebKit
 @objc(UAEPass)
 class UAEPass: NSObject {
 
+  // Error codes shared with Android (UaepassModule.java) and src/index.tsx.
+  static let errorMissingParameters = "MISSING_PARAMETERS"
+  static let errorCancelled = "CANCELLED"
+  static let errorLoginFailed = "LOGIN_FAILED"
+  static let errorStateMismatch = "STATE_MISMATCH"
+  static let errorSuperseded = "SUPERSEDED"
+
   @objc public static var resolveResponse: RCTPromiseResolveBlock?
   @objc public static var rejectResponse: RCTPromiseRejectBlock?
 
@@ -23,11 +30,12 @@ class UAEPass: NSObject {
   public static var locale: String!
   public static var successHost: String!
   public static var failureHost: String!
+  /// OAuth `state` sent with the current login request.
+  public static var state: String?
 
-  @objc
-  static func requiresMainQueueSetup() -> Bool {
-    return true
-  }
+  /// The login screen currently on screen, if any. Used by the redirect
+  /// handler instead of guessing from the view hierarchy.
+  weak static var activeController: UAEPassViewController?
 
   @objc
   func getSuccessHost() -> String? {
@@ -42,128 +50,119 @@ class UAEPass: NSObject {
   @objc
   func handleLoginSuccess() {
     DispatchQueue.main.async {
-      if let topViewController = UserInterfaceInfo.topViewController() {
-        if let webViewController = topViewController as? UAEPassWebViewController {
-          print("UAEPASS_DEBUG forceReload (top VC is web)")
-          webViewController.forceReload()
-          return
-        }
-        if let container = topViewController as? UAEPassViewController,
-           let embeddedWebVC = container.embeddedWebVC {
-          print("UAEPASS_DEBUG forceReload (embedded web)")
-          embeddedWebVC.forceReload()
-          return
-        }
-      }
+      UAEPass.activeController?.embeddedWebVC?.forceReload()
     }
   }
 
   @objc
   func handleLoginFailure() {
-    guard let webViewController = UserInterfaceInfo.topViewController() as? UAEPassWebViewController else {
+    DispatchQueue.main.async {
+      UAEPass.activeController?.embeddedWebVC?.foreceStop()
+    }
+  }
+
+  @objc
+  func login(_ params: NSDictionary,
+             resolve: @escaping RCTPromiseResolveBlock,
+             rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+
+    func string(_ key: String) -> String? {
+      guard let value = params[key] as? String, !value.isEmpty else { return nil }
+      return value
+    }
+
+    guard
+      let env = string("env"),
+      let clientId = string("clientId"),
+      let redirectURL = string("redirectURL"),
+      let successHost = string("successHost"),
+      let failureHost = string("failureHost"),
+      let scheme = string("scheme"),
+      let scope = string("scope")
+    else {
+      reject(UAEPass.errorMissingParameters, "One or more required parameters are missing", nil)
       return
     }
-    webViewController.foreceStop()
-  }
 
-  @objc
-  func login(_ params: [String: String],
-             resolve:  @escaping RCTPromiseResolveBlock,
-             rejecter reject:  @escaping RCTPromiseRejectBlock) -> Void {
+    DispatchQueue.main.async {
+      // A second login() while one is pending would otherwise orphan the
+      // first promise forever.
+      UAEPass.reject(withCode: UAEPass.errorSuperseded,
+                     message: "A newer UAE PASS login replaced this one",
+                     error: nil)
 
-    UAEPass.resolveResponse = resolve
-    UAEPass.rejectResponse = reject
+      UAEPass.resolveResponse = resolve
+      UAEPass.rejectResponse = reject
 
-    if( params["env"]?.isEmpty == false &&
-        params["clientId"]?.isEmpty == false &&
-        params["redirectURL"]?.isEmpty == false &&
-        params["successHost"]?.isEmpty == false &&
-        params["failureHost"]?.isEmpty == false &&
-        params["scheme"]?.isEmpty == false &&
-        params["scope"]?.isEmpty == false
-    ){
-      UAEPass.env = params["env"]
-      UAEPass.clientId = params["clientId"]
-      UAEPass.redirectURL = params["redirectURL"]
-      UAEPass.successHost = params["successHost"]
-      UAEPass.failureHost = params["failureHost"]
-      UAEPass.scheme = params["scheme"]
-      UAEPass.scope = params["scope"]
+      UAEPass.env = env
+      UAEPass.clientId = clientId
+      UAEPass.redirectURL = redirectURL
+      UAEPass.successHost = successHost
+      UAEPass.failureHost = failureHost
+      UAEPass.scheme = scheme
+      UAEPass.scope = scope
+      UAEPass.locale = string("locale") ?? "en"
+      UAEPass.state = string("state") ?? UAEPass.randomState(length: 24)
 
-      UAEPass.locale = "en"
-      if(params["locale"]?.isEmpty == false){
-        UAEPass.locale = params["locale"]
+      if let previous = UAEPass.activeController, previous.presentingViewController != nil {
+        previous.dismissFlow(completion: UAEPass.presentLoginScreen)
+      } else {
+        UAEPass.presentLoginScreen()
       }
-
-      DispatchQueue.main.async {
-        let viewController = UAEPassViewController()
-        let topViewController = UserInterfaceInfo.topViewController()
-        let navController = topViewController as? UINavigationController ?? topViewController?.navigationController
-
-        if let navController = navController {
-          navController.pushViewController(viewController, animated: true)
-        } else {
-          topViewController?.present(viewController, animated: true, completion: nil)
-        }
-      }
-
-    } else {
-      UAEPass.reject(
-        withCode: "ERROR",
-        message: "One or more required parameters are missing",
-        error: NSError(domain: "UAEPass", code: 400)
-      )
     }
   }
 
   @objc
-  func logout(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
+  func logout(_ resolve: @escaping RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
     DispatchQueue.main.async {
       HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
-      WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
-        records.forEach { record in
-          WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
-        }
+      WKWebsiteDataStore.default().removeData(
+        ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
+        modifiedSince: Date.distantPast
+      ) {
+        resolve("success")
       }
     }
-    resolve("success")
   }
 
   // =========================================================
-  // ✅ Redirect URL handler (ObjC + Swift compatible)
+  // Redirect URL handler (ObjC + Swift compatible), called from the host
+  // app's AppDelegate when the UAE PASS app hands control back.
   // - Returns @YES when handled (success/failure)
-  // - Returns nil when not a UAEPASS URL
+  // - Returns nil when not a UAE PASS URL, or no login is in progress
   // Selector matches header: -handleRedirectUrl:(NSURL *)url
   // =========================================================
 
   @objc(handleRedirectUrl:)
   func handleRedirectUrl(_ url: URL) -> NSNumber? {
+    guard UAEPass.resolveResponse != nil else { return nil }
 
+    let host = (url.host ?? "").lowercased()
     let successHost = (getSuccessHost() ?? "").lowercased()
     let failureHost = (getFailureHost() ?? "").lowercased()
-    let urlString = url.absoluteString.lowercased()
-    let host = (url.host ?? "").lowercased()
 
-    let isSuccess =
-      (!successHost.isEmpty && urlString.contains(successHost)) ||
-      host == "uaepasssuccess"
-
-    if isSuccess {
-      let didResolve = completeUAEPassSuccess(from: url)
-      handleLoginSuccess()
-      if didResolve { dismissPresentedUAEPassFlow() }
+    // The SDK always tells the UAE PASS app to call back on
+    // `<CFBundleURLTypes[0]>://uaePassSuccess` / `://uaePassFail`
+    // (HandleURLScheme), so match those hosts as well as the configured ones.
+    if host == "uaepasssuccess" || (!successHost.isEmpty && host == successHost) {
+      if completeUAEPassSuccess(from: url) {
+        dismissPresentedUAEPassFlow()
+      } else {
+        // Usual case: no code on the callback URL. Reload the stored success
+        // URL in the web view, which then redirects to redirect_uri?code=…
+        handleLoginSuccess()
+      }
       return NSNumber(value: true)
     }
 
-    let isFailure =
-      (!failureHost.isEmpty && urlString.contains(failureHost)) ||
-      host == "uaepassfail"
-
-    if isFailure {
-      print("UAEPASS_DEBUG Handling UAEPass failure")
-      completeUAEPassFailure(from: url)
-      handleLoginFailure() // ✅ correct
-      dismissPresentedUAEPassFlow()
+    if host == "uaepassfail" || (!failureHost.isEmpty && host == failureHost) {
+      DispatchQueue.main.async {
+        if let controller = UAEPass.activeController {
+          controller.handleAppFailure(callbackURL: url)
+        } else {
+          self.completeUAEPassFailure(from: url)
+        }
+      }
       return NSNumber(value: true)
     }
 
@@ -173,46 +172,47 @@ class UAEPass: NSObject {
   // MARK: - Helpers (Swift-only)
 
   private func completeUAEPassSuccess(from url: URL) -> Bool {
-    guard
-      let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
-      let code = queryItems.first(where: { $0.name == "code" })?.value,
-      !code.isEmpty
-    else {
+    guard let code = url.valueOf("code"), !code.isEmpty else {
       return false
     }
-
-    UAEPass.resolve(withAccessCode: code)
+    UAEPass.complete(code: code, returnedState: url.valueOf("state"))
     return true
   }
 
   private func completeUAEPassFailure(from url: URL) {
-    let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-    let message =
-      components?.queryItems?.first(where: { $0.name == "error_description" })?.value ??
-      components?.queryItems?.first(where: { $0.name == "error" })?.value ??
-      "UAE PASS login failed"
-
-    UAEPass.reject(withCode: "ERROR", message: message, error: nil)
+    if let error = url.valueOf("error"), !error.isEmpty {
+      UAEPass.reject(uaePassError: error, description: url.valueOf("error_description"))
+    } else {
+      UAEPass.reject(withCode: UAEPass.errorCancelled, message: "UAE PASS login was cancelled", error: nil)
+    }
   }
 
   private func dismissPresentedUAEPassFlow() {
     DispatchQueue.main.async {
-      guard let top = UserInterfaceInfo.topViewController() else { return }
-
-      // If UAEPASS is presented modally
-      let topName = NSStringFromClass(type(of: top))
-      if topName.contains("UAEPass") {
-        top.dismiss(animated: true)
-        return
-      }
-
-      // If UAEPASS is in navigation stack
-      if let nav = top.navigationController {
-        if nav.viewControllers.contains(where: { NSStringFromClass(type(of: $0)).contains("UAEPass") }) {
-          nav.popToRootViewController(animated: true)
-        }
-      }
+      UAEPass.activeController?.dismissFlow()
     }
+  }
+
+  private static func presentLoginScreen() {
+    guard let presenter = UserInterfaceInfo.topViewController() else {
+      reject(withCode: errorLoginFailed,
+             message: "No view controller available to present UAE PASS login",
+             error: nil)
+      return
+    }
+
+    // Always present modally in our own navigation controller. Pushing onto
+    // the host app's navigation controller (e.g. react-native-screens) and
+    // later popping it to root corrupts the app's navigation stack.
+    let viewController = UAEPassViewController()
+    let navController = UINavigationController(rootViewController: viewController)
+    navController.presentationController?.delegate = viewController
+    presenter.present(navController, animated: true, completion: nil)
+  }
+
+  static func randomState(length: Int) -> String {
+    let letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    return String((0..<length).map { _ in letters.randomElement()! })
   }
 }
 
@@ -223,12 +223,46 @@ extension UAEPass {
     rejectResponse = nil
   }
 
+  /// Resolves the pending login, rejecting instead if the authorization
+  /// server echoed back a different `state` than the one we sent.
+  static func complete(code: String, returnedState: String?) {
+    if let returnedState = returnedState, !returnedState.isEmpty,
+       let sentState = state, returnedState != sentState {
+      reject(withCode: errorStateMismatch,
+             message: "UAE PASS returned an unexpected state parameter",
+             error: nil)
+      return
+    }
+    resolve(withAccessCode: code)
+  }
+
+  /// OAuth `error` values UAE PASS documents as "user cancelled the login"
+  /// (lower-cased; see docs.uaepass.ae text-message guidelines).
+  static let cancellationErrors: Set<String> = [
+    "access_denied", "cancelled", "cancelledonapp", "invalid_request", "login_required",
+  ]
+
+  /// Rejects with an error UAE PASS returned, keeping its raw `error` and
+  /// `error_description` in the JS error's `userInfo` so the app can show its
+  /// own (or UAE PASS's guideline) message for each case.
+  static func reject(uaePassError error: String, description: String?) {
+    let code = cancellationErrors.contains(error.lowercased()) ? errorCancelled : errorLoginFailed
+    let message = (description?.isEmpty == false ? description : nil) ?? error
+    var userInfo: [String: Any] = [NSLocalizedDescriptionKey: message, "error": error]
+    if let description = description, !description.isEmpty {
+      userInfo["errorDescription"] = description
+    }
+    reject(withCode: code, message: message, error: NSError(domain: "UAEPass", code: -1, userInfo: userInfo))
+  }
+
   @objc(resolveWithAccessCode:)
   public static func resolve(withAccessCode accessCode: String) {
     guard let resolve = resolveResponse else { return }
 
-    var payload: [String: String] = [:]
-    payload["accessCode"] = accessCode
+    var payload: [String: String] = ["accessCode": accessCode]
+    if let state = state {
+      payload["state"] = state
+    }
     clearPromiseHandlers()
     resolve(payload)
   }
