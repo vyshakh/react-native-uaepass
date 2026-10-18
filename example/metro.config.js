@@ -1,45 +1,36 @@
-const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+// Learn more https://docs.expo.dev/guides/monorepos/
+const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
-const escape = require('escape-string-regexp');
-const exclusionList = require('metro-config/src/defaults/exclusionList');
 const pak = require('../package.json');
 
 const root = path.resolve(__dirname, '..');
-const modules = Object.keys({ ...pak.peerDependencies });
+const config = getDefaultConfig(__dirname);
 
-/**
- * Metro configuration
- * https://facebook.github.io/metro/docs/configuration
- *
- * @type {import('metro-config').MetroConfig}
- */
-const config = {
-  watchFolders: [root],
+const escape = (value) => value.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
 
-  // We need to make sure that only one version is loaded for peerDependencies
-  // So we block them at the root, and alias them to the versions in example's node_modules
-  resolver: {
-    blacklistRE: exclusionList(
-      modules.map(
-        (m) =>
-          new RegExp(`^${escape(path.join(root, 'node_modules', m))}\\/.*$`)
-      )
-    ),
+// The library's source (../src) is bundled directly, but the repo root has its
+// own, older react / react-native as devDependencies for jest and tsc. Block
+// those so every peer dependency resolves to the single copy in this app.
+const peerDependencies = Object.keys(pak.peerDependencies);
 
-    extraNodeModules: modules.reduce((acc, name) => {
-      acc[name] = path.join(__dirname, 'node_modules', name);
-      return acc;
-    }, {}),
-  },
-
-  transformer: {
-    getTransformOptions: async () => ({
-      transform: {
-        experimentalImportSupport: false,
-        inlineRequires: true,
-      },
-    }),
-  },
+config.watchFolders = [...new Set([...(config.watchFolders || []), root])];
+config.resolver.blockList = [
+  ...[].concat(config.resolver.blockList || []),
+  ...peerDependencies.map(
+    (name) =>
+      new RegExp(`^${escape(path.join(root, 'node_modules', name))}\\/.*$`)
+  ),
+];
+config.resolver.extraNodeModules = {
+  ...config.resolver.extraNodeModules,
+  // Bundle the library straight from its source.
+  [pak.name]: root,
+  ...Object.fromEntries(
+    peerDependencies.map((name) => [
+      name,
+      path.join(__dirname, 'node_modules', name),
+    ])
+  ),
 };
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = config;

@@ -25,5 +25,5 @@
     "target": "esnext",
     "verbatimModuleSyntax": true
   },
-  "include": ["types"]
+  "include": ["src"]
 }

@@ -41,6 +41,7 @@ extension WKWebViewConfiguration {
     @objc public var webView: WKWebView!
     @objc public var uaePassWebViewController: UAEPassWebViewController?
     @objc public var sdkLang: SDKLang = .english
+    @objc public var isHashSigning: Bool = false
 
     /// private constructor
     public override init() {

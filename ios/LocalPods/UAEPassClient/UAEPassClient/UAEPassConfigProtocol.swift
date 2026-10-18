@@ -9,13 +9,13 @@ import Foundation
 
 enum BaseUrls: String {
     case devTX = "https://dev-id.uaepass.ae/"
-    case devIDS = "https://dev-ids.uaepass.ae/"
     case qaTX = "https://qa-id.uaepass.ae/"
-    case qaIDS = "https://qa-ids.uaepass.ae/"
     case prodTX = "https://id.uaepass.ae/"
-    case prodIDS = "https://ids.uaepass.ae/"
     case stgTX = "https://stg-id.uaepass.ae/"
-    case stgIDS = "https://stg-ids.uaepass.ae/"
+    case eSignDev = "https://dev-esign.uaepass.ae/v2/signature/"
+    case eSignQA = "https://qa-esign.uaepass.ae/v2/signature/"
+    case eSignProd = "https://esign.uaepass.ae/v2/signature/"
+    case eSignSTG = "https://stg-esign.uaepass.ae/v2/signature/"
 
     public func get() -> String {
         return rawValue

@@ -1,6 +1,36 @@
-const { withDangerousMod, withInfoPlist } = require('@expo/config-plugins');
+const {
+  withDangerousMod,
+  withInfoPlist,
+  withPodfileProperties,
+} = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
+
+// UAEPassClient 2.x requires iOS 15.
+const MIN_IOS_VERSION = '15.0';
+
+const UAEPASS_QUERY_SCHEMES = [
+  'uaepass',
+  'uaepassqa',
+  'uaepassstg',
+  'uaepassdev',
+];
+
+function isBelowMinIos(version) {
+  return parseFloat(version) < parseFloat(MIN_IOS_VERSION);
+}
+
+// Path to the vendored UAEPassClient pod relative to ios/, resolved from this
+// package's real location so it also works when node_modules is hoisted
+// (monorepos) rather than assuming ../node_modules/react-native-uaepass.
+function uaePassPodPath(projectRoot) {
+  const packageRoot = path.resolve(__dirname, '..');
+  const relative = path.relative(
+    path.join(projectRoot, 'ios'),
+    path.join(packageRoot, 'ios', 'LocalPods', 'UAEPassClient')
+  );
+  return relative.split(path.sep).join('/');
+}
 
 // --- Wire up AppDelegate so UAEPass.handleRedirectUrl actually gets called ---
 // Without this, `expo prebuild` never adds an openURL / continue-userActivity
@@ -75,10 +105,9 @@ function patchSwiftAppDelegate(appDelegatePath) {
   // 2. Merge into the existing `open url:` override if present, otherwise
   // insert a new override right after the class declaration.
   const openUrlOverrideRegex =
-    /(public override func application\(\s*_ app: UIApplication,\s*open url: URL,\s*options: \[UIApplication\.OpenURLOptionsKey: Any\] = \[:\]\s*\) -> Bool \{\s*)/;
+    /(public override func application\(\s*_ app: UIApplication,\s*open url: URL,\s*options: \[UIApplication\.OpenURLOptionsKey: Any\] = \[:\]\s*\) -> Bool \{[ \t]*\n)/;
 
-  const openUrlHook = `
-    let uaepass = UAEPass()
+  const openUrlHook = `    let uaepass = UAEPass()
     if uaepass.handleRedirectUrl(url) != nil {
       return true
     }
@@ -105,10 +134,9 @@ ${openUrlHook}
   // 3. Merge into the existing `continue userActivity:` override if present,
   // otherwise insert a new override.
   const continueActivityRegex =
-    /(public override func application\(\s*_ application: UIApplication,\s*continue userActivity: NSUserActivity,\s*restorationHandler: @escaping \(\[UIUserActivityRestoring\]\?\) -> Void\s*\) -> Bool \{\s*)/;
+    /(public override func application\(\s*_ application: UIApplication,\s*continue userActivity: NSUserActivity,\s*restorationHandler: @escaping \(\[UIUserActivityRestoring\]\?\) -> Void\s*\) -> Bool \{[ \t]*\n)/;
 
-  const continueActivityHook = `
-    if let url = userActivity.webpageURL {
+  const continueActivityHook = `    if let url = userActivity.webpageURL {
       let uaepass = UAEPass()
       if uaepass.handleRedirectUrl(url) != nil {
         return true
@@ -186,51 +214,65 @@ ${openUrlHook}
   fs.writeFileSync(appDelegatePath, contents, 'utf8');
 }
 
+function addUaePassPod(podfileContent, podPath, appName) {
+  if (podfileContent.includes("pod 'UAEPassClient'")) {
+    return podfileContent;
+  }
+
+  // Prefer the target named after the app; fall back to the first target
+  // (Expo sanitises the name differently across SDK versions).
+  const sanitizedName = (appName || '').replace(/[^A-Za-z0-9_]/g, '');
+  const namedTarget = new RegExp(
+    `^(\\s*target\\s+['"]${sanitizedName}['"]\\s+do[^\\n]*\\n)`,
+    'm'
+  );
+  const anyTarget = /^(\s*target\s+['"][^'"]+['"]\s+do[^\n]*\n)/m;
+  const targetRegex =
+    sanitizedName && namedTarget.test(podfileContent) ? namedTarget : anyTarget;
+
+  if (!targetRegex.test(podfileContent)) {
+    throw new Error(
+      '[react-native-uaepass] Could not find an app target in ios/Podfile to add UAEPassClient to.'
+    );
+  }
+
+  return podfileContent.replace(
+    targetRegex,
+    `$1  # UAEPass dependencies\n  pod 'UAEPassClient', :path => '${podPath}'\n\n`
+  );
+}
+
+function raisePodfilePlatform(podfileContent) {
+  // Expo templates: `platform :ios, podfile_properties['ios.deploymentTarget'] || '13.4'`
+  // Bare templates:  `platform :ios, '13.0'`
+  return podfileContent
+    .replace(
+      /(platform :ios, podfile_properties\['ios\.deploymentTarget'\] \|\| ')([\d.]+)(')/,
+      (match, before, version, after) =>
+        isBelowMinIos(version) ? `${before}${MIN_IOS_VERSION}${after}` : match
+    )
+    .replace(/(platform :ios, ')([\d.]+)(')/, (match, before, version, after) =>
+      isBelowMinIos(version) ? `${before}${MIN_IOS_VERSION}${after}` : match
+    );
+}
+
 const withUaePassIos = (config, uaepassConfig = {}) => {
   // --- Modify Podfile ---
   config = withDangerousMod(config, [
     'ios',
     (modConfig) => {
-      const podfilePath = path.join(
-        modConfig.modRequest.projectRoot,
-        'ios',
-        'Podfile'
+      const { projectRoot } = modConfig.modRequest;
+      const podfilePath = path.join(projectRoot, 'ios', 'Podfile');
+      const original = fs.readFileSync(podfilePath, 'utf8');
+
+      let podfileContent = addUaePassPod(
+        original,
+        uaePassPodPath(projectRoot),
+        modConfig.name
       );
-      let podfileContent = fs.readFileSync(podfilePath, 'utf8');
+      podfileContent = raisePodfilePlatform(podfileContent);
 
-      // Get the app name from config and sanitize it (remove spaces)
-      const targetName = modConfig.name
-        ? modConfig.name.replace(/\s+/g, '')
-        : null;
-      if (!targetName) {
-        throw new Error('App name not defined in app.json or app.config.js');
-      }
-
-      const uaepassPod = `
-  # UAEPass dependencies
-  pod 'UAEPassClient', :path => '../node_modules/react-native-uaepass/ios/LocalPods/UAEPassClient'
-`;
-
-      // Find the target block dynamically
-      const targetRegex = new RegExp(
-        `target\\s+'${targetName}'\\s+do\\s*([\\s\\S]*?)(?=end|$)`,
-        'm'
-      );
-      const match = podfileContent.match(targetRegex);
-
-      if (!match) {
-        throw new Error(`Target '${targetName}' not found in Podfile`);
-      }
-
-      // Check if UAEPassClient pod is already included to avoid duplicates
-      if (!podfileContent.includes("pod 'UAEPassClient'")) {
-        // Append the UAEPass pod to the target block
-        podfileContent = podfileContent.replace(
-          targetRegex,
-          `target '${targetName}' do
-${match[1].trim()}
-${uaepassPod}`
-        );
+      if (podfileContent !== original) {
         fs.writeFileSync(podfilePath, podfileContent, 'utf8');
       }
 
@@ -238,9 +280,17 @@ ${uaepassPod}`
     },
   ]);
 
+  // --- Raise an explicit deployment target that is too low ---
+  config = withPodfileProperties(config, (modConfig) => {
+    const target = modConfig.modResults['ios.deploymentTarget'];
+    if (target && isBelowMinIos(target)) {
+      modConfig.modResults['ios.deploymentTarget'] = MIN_IOS_VERSION;
+    }
+    return modConfig;
+  });
+
   // --- Modify Info.plist ---
   config = withInfoPlist(config, (modConfig) => {
-    // Get URL name and scheme, falling back to android.package or android.scheme
     const urlName = uaepassConfig.uaePassBundleURLName || '';
     const urlScheme = uaepassConfig.uaePassBundleURLScheme || '';
 
@@ -250,41 +300,37 @@ ${uaepassPod}`
       );
     }
 
-    // Add or update CFBundleURLTypes.
-    // - Guard against duplicate entries: `expo prebuild` (without --clean) can
-    //   run this mod against an already-modified Info.plist, and without this
-    //   check the same entry gets appended again on every run.
-    // - Put the UAEPass entry FIRST in the array: the native UAEPassClient SDK
-    //   (HandleURLScheme.externalURLSchemeSuccess/Fail) grabs
-    //   `CFBundleURLTypes[0].CFBundleURLSchemes[0]` to build the callback URL it
-    //   hands to the UAE PASS app for the app-to-app login flow. If another
-    //   CFBundleURLTypes entry (e.g. from expo-linking or another plugin) ends
-    //   up first, the UAE PASS app is told to call back with the wrong scheme
-    //   and the redirect into this app is silently lost.
-    const existingURLTypes = modConfig.modResults.CFBundleURLTypes || [];
-    const alreadyPresent = existingURLTypes.some(
+    // Put the UAEPass CFBundleURLTypes entry FIRST, moving it there if an
+    // earlier prebuild (or another plugin) left it further down: the native
+    // UAEPassClient SDK (HandleURLScheme.externalURLSchemeSuccess/Fail) grabs
+    // `CFBundleURLTypes[0].CFBundleURLSchemes[0]` to build the callback URL it
+    // hands to the UAE PASS app for the app-to-app login flow. If another
+    // entry (e.g. from expo-linking) ends up first, the UAE PASS app is told to
+    // call back with the wrong scheme and the redirect is silently lost.
+    // Filtering out the existing entry also keeps re-runs of `expo prebuild`
+    // (without --clean) from appending duplicates.
+    const otherURLTypes = (modConfig.modResults.CFBundleURLTypes || []).filter(
       (entry) =>
-        entry.CFBundleURLName === urlName ||
-        (entry.CFBundleURLSchemes || []).includes(urlScheme)
+        entry.CFBundleURLName !== urlName &&
+        !(entry.CFBundleURLSchemes || []).includes(urlScheme)
     );
 
-    if (!alreadyPresent) {
-      modConfig.modResults.CFBundleURLTypes = [
-        {
-          CFBundleTypeRole: 'Editor',
-          CFBundleURLName: urlName,
-          CFBundleURLSchemes: [urlScheme],
-        },
-        ...existingURLTypes,
-      ];
-    }
+    modConfig.modResults.CFBundleURLTypes = [
+      {
+        CFBundleTypeRole: 'Editor',
+        CFBundleURLName: urlName,
+        CFBundleURLSchemes: [urlScheme],
+      },
+      ...otherURLTypes,
+    ];
 
-    // Add LSApplicationQueriesSchemes
+    // Merge, rather than replace, so other plugins' query schemes survive.
+    const querySchemes = modConfig.modResults.LSApplicationQueriesSchemes || [];
     modConfig.modResults.LSApplicationQueriesSchemes = [
-      'uaepass',
-      'uaepassqa',
-      'uaepassstg',
-      'uaepassdev',
+      ...querySchemes,
+      ...UAEPASS_QUERY_SCHEMES.filter(
+        (scheme) => !querySchemes.includes(scheme)
+      ),
     ];
 
     return modConfig;
@@ -296,4 +342,9 @@ ${uaepassPod}`
   return config;
 };
 
-module.exports = { withUaePassIos };
+module.exports = {
+  withUaePassIos,
+  // exported for tests
+  addUaePassPod,
+  raisePodfilePlatform,
+};

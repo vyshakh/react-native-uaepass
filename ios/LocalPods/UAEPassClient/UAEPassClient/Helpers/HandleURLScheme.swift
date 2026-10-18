@@ -15,11 +15,7 @@ import UIKit
     @objc public class func openCustomApp(fullUrl: String) {
         // app will opened successfully
         let customURL = URL(string: fullUrl)!
-        if #available(iOS 10.0, *) {
-            UIApplication.shared.open(customURL)
-        } else {
-            UIApplication.shared.openURL(customURL)
-        }
+        UIApplication.shared.open(customURL)
     }
     @objc class func openCustomURLScheme(customURLScheme: String) -> Bool {
         let customURL = URL(string: customURLScheme)!

@@ -15,5 +15,5 @@ const withUaePass = (config, props = {}) => {
 module.exports = createRunOncePlugin(
   withUaePass,
   'react-native-uaepass',
-  '1.0.0'
+  require('../package.json').version
 );

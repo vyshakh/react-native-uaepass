@@ -8,6 +8,30 @@
 
 import Foundation
 
+@objc public class UAEPassESignRequest:NSObject, Codable {
+    @objc public var signingIdentity: String?
+    @objc public let txId: String?
+    public var signType: ESignType = .advanced
+    public var fileURLs: [String] = []
+    public var signRequestURL: String = ""
+    public var finalSignRequestURL: String = ""
+    public var accessToken: String = ""
+
+    enum CodingKeys: String, CodingKey {
+        case signingIdentity
+        case txId
+    }
+    required public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        signingIdentity = try values.decodeIfPresent(String.self, forKey: .signingIdentity)
+        txId = try values.decodeIfPresent(String.self, forKey: .txId)
+    }
+    public override init() {
+        signingIdentity = ""
+        txId = ""
+    }
+}
+
 @objc public class UAEPassToken:NSObject, Codable {
     @objc public var refresh_token: String?
     @objc public let scope: String?
@@ -58,7 +82,6 @@ import Foundation
     func isTokenValid() -> Bool {
         return Date().timeIntervalSince1970 < (expiryTime - 60)
     }
-
 }
 
 struct UAEPASSConfig: Codable {
